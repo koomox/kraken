@@ -1,4 +1,4 @@
-package cache
+package bucket
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ type Store struct {
 }
 
 type Element struct {
-	Key     string
+	Key     int
 	Payload interface{}
 }
 
@@ -23,7 +23,7 @@ func NewStore() *Store {
 	}
 }
 
-func (r *Store) Put(key string, payload interface{}) {
+func (r *Store) Put(key int, payload interface{}) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -33,7 +33,7 @@ func (r *Store) Put(key string, payload interface{}) {
 	})
 }
 
-func (r *Store) Get(key string) interface{} {
+func (r *Store) Get(key int) interface{} {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -43,7 +43,7 @@ func (r *Store) Get(key string) interface{} {
 	return nil
 }
 
-func (r *Store) Remove(key string) {
+func (r *Store) Remove(key int) {
 	r.Lock()
 	defer r.Unlock()
 

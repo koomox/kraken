@@ -96,3 +96,10 @@ func (r *Store) ToJSON() ([]byte, error) {
 
 	return json.Marshal(m)
 }
+
+func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
+	it := r.tree.Iterator()
+	for it.Next() {
+		callbackFunc(it.Value())
+	}
+}

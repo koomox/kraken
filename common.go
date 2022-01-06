@@ -9,6 +9,7 @@ type Store interface {
 	GetWithExpire(key string) (interface{}, time.Time)
 	Values() []interface{}
 	ToJSON() ([]byte, error)
+	CallbackFunc(func(interface{}))
 }
 
 type Cache interface {
@@ -18,4 +19,15 @@ type Cache interface {
 	Cleanup()
 	Values() []interface{}
 	ToJSON() ([]byte, error)
+	CallbackFunc(func(interface{}))
+}
+
+type Bucket interface {
+	Put(int, interface{})
+	Get(int) interface{}
+	Remove(int)
+	Cleanup()
+	Values() []interface{}
+	ToJSON() ([]byte, error)
+	CallbackFunc(func(interface{}))
 }
