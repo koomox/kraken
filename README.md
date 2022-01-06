@@ -32,6 +32,20 @@ func main() {
 			fmt.Println(v.(string))
 		}
 	}
+	store.CallbackFunc(func(v interface{}){
+		if v != nil {
+			fmt.Println(v.(string))
+		}
+	})
+	store.CancelFunc(func(v interface{})(ok bool){
+		if v != nil {
+			if (v.(string) == "kraken") {
+				fmt.Println(v.(string))
+				ok = true
+			}
+		}
+		return
+	})
 	b, err := store.ToJSON()
 	if err != nil {
 		fmt.Println(err.Error())
