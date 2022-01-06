@@ -30,4 +30,5 @@ type Bucket interface {
 	Values() []interface{}
 	ToJSON() ([]byte, error)
 	CallbackFunc(func(interface{}))
+	CancelFunc(func(interface{}) bool)
 }

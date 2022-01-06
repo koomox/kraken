@@ -103,3 +103,12 @@ func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
 		callbackFunc(it.Value())
 	}
 }
+
+func (r *Store) CancelFunc(callbackFunc func(interface{}) bool) {
+	it := r.tree.Iterator()
+	for it.Next() {
+		if callbackFunc(it.Value()) {
+			return
+		}
+	}
+}
