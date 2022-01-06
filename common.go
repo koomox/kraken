@@ -7,6 +7,7 @@ type Store interface {
 	Get(string) interface{}
 	Remove(string)
 	GetWithExpire(key string) (interface{}, time.Time)
+	ToJSON() ([]byte, error)
 }
 
 type Cache interface {
@@ -14,4 +15,5 @@ type Cache interface {
 	Get(string) interface{}
 	Remove(string)
 	Cleanup()
+	ToJSON() ([]byte, error)
 }

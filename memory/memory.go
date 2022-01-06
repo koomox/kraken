@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"encoding/json"
 	"github.com/koomox/kraken/redblacktree"
 	"sync"
 	"time"
@@ -74,4 +75,15 @@ func (r *Store) cleanup() {
 			r.tree.Remove(v.Key)
 		}
 	}
+}
+
+func (r *Store) ToJSON() ([]byte, error) {
+	var m []interface{}
+	it := r.tree.Iterator()
+	for it.Next() {
+		v := it.Value().(*Element)
+		m = append(m, v.Payload)
+	}
+
+	return json.Marshal(m)
 }

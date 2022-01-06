@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"github.com/koomox/kraken/redblacktree"
 	"sync"
 )
@@ -48,4 +49,15 @@ func (r *Store) Cleanup() {
 		v := it.Value().(*Element)
 		r.tree.Remove(v.Key)
 	}
+}
+
+func (r *Store) ToJSON() ([]byte, error) {
+	var m []interface{}
+	it := r.tree.Iterator()
+	for it.Next() {
+		v := it.Value().(*Element)
+		m = append(m, v.Payload)
+	}
+
+	return json.Marshal(m)
 }
