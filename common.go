@@ -10,6 +10,7 @@ type Store interface {
 	Values() []interface{}
 	ToJSON() ([]byte, error)
 	CallbackFunc(func(interface{}))
+	CancelFunc(func(interface{}) bool)
 }
 
 type Cache interface {
@@ -20,6 +21,7 @@ type Cache interface {
 	Values() []interface{}
 	ToJSON() ([]byte, error)
 	CallbackFunc(func(interface{}))
+	CancelFunc(func(interface{}) bool)
 }
 
 type Bucket interface {
