@@ -24,10 +24,13 @@ func main() {
 	for k, v := range elements {
 		store.Put(fmt.Sprintf("%v", k), v, 60 * time.Second)
 	}
-	r := rand.Intn(len(elements))
-	id := fmt.Sprintf("%v", r)
-	if v := store.Get(id); v != nil {
-		fmt.Println(v.(string))
+	store.Put("name", "kraken", 60 * time.Second)
+	store.Remove("1")
+	ids := []string{"name", "1"}
+	for _, id := range ids {
+		if v := store.Get(id); v != nil {
+			fmt.Println(v.(string))
+		}
 	}
 }
 ```
