@@ -32,5 +32,11 @@ func main() {
 			fmt.Println(v.(string))
 		}
 	}
+	b, err := store.ToJSON()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(b))
 }
 ```
