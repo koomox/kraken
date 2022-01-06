@@ -46,6 +46,12 @@ func (r *Store) Get(key string) interface{} {
 	return element.Payload
 }
 
+func (r *Store) Remove(key string) {
+	if _, ok := r.tree.Get(key); ok {
+		r.tree.Remove(key)
+	}
+}
+
 func (r *Store) GetWithExpire(key string) (payload interface{}, expired time.Time) {
 	v, ok := r.tree.Get(key)
 	if !ok {
