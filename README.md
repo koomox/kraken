@@ -26,7 +26,7 @@ func main() {
 	}
 	store.Put("name", "kraken", 60 * time.Second)
 	store.Remove("1")
-	ids := []string{"name", "1"}
+	ids := []string{"name", "1", fmt.Sprintf("%v", rand.Intn(len(elements)))}
 	for _, id := range ids {
 		if v := store.Get(id); v != nil {
 			fmt.Println(v.(string))
