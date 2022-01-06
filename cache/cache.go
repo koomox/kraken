@@ -51,6 +51,15 @@ func (r *Store) Cleanup() {
 	}
 }
 
+func (r *Store) Values() (m []interface{}) {
+	it := r.tree.Iterator()
+	for it.Next() {
+		v := it.Value().(*Element)
+		m = append(m, v.Payload)
+	}
+	return
+}
+
 func (r *Store) ToJSON() ([]byte, error) {
 	var m []interface{}
 	it := r.tree.Iterator()
