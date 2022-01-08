@@ -19,7 +19,7 @@ type Element struct {
 
 func NewStore() *Store {
 	return &Store{
-		tree: redblacktree.NewWithStringComparator(),
+		tree: redblacktree.NewWithIntComparator(),
 	}
 }
 
