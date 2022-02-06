@@ -1,10 +1,16 @@
 package sqlparser
 
 import (
+	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
-	"fmt"
 	"strings"
+)
+
+const (
+	parsetIntImportFormat = "aW1wb3J0ICgKICAgICJzdHJjb252Igop"
+	parsetIntFuncFormat   = "ZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCWQsIGVyciA6PSBzdHJjb252LlBhcnNlSW50KHMsIDEwLCA2NCkKICAgIGlmIGVyciAhPSBuaWwgewogICAgCXJldHVybiAwCiAgICB9CiAgICByZXR1cm4gaW50KGQpCn0"
 )
 
 func MkdirAll(p string) (err error) {
@@ -27,6 +33,8 @@ func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryNa
 }
 
 func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTable) error {
+	importHead, _ := base64.RawStdEncoding.DecodeString(parsetIntImportFormat)
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parsetIntFuncFormat)
 	tableSuffix := "Table"
 	var tables []string
 
@@ -39,7 +47,7 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 		element += "\n\n"
 		element += data[i].ToStructFormat(tagName)
 	}
-	element = "package " + pkgName + "\n\nconst (\n\t" + strings.Join(tables, "\n\t") + "\n)" + element
+	element = "package " + pkgName + "\n\n" + string(importHead) + "\n\nconst (\n\t" + strings.Join(tables, "\n\t") + "\n)\n\n" + string(fieldFormat) + element
 
 	return WriteFile(element, fileName)
 }
