@@ -8,7 +8,7 @@ import (
 
 const (
 	structFormat = "type structName struct {\ncontentStr\n}"
-	structFieldFormat = "CWZpZWxkTmFtZSBmaWVsZERhdGFUeXBlIGB0YWdGaWVsZDogInRhZ05hbWUiYA"
+	structFieldFormat = "CWZpZWxkTmFtZSBmaWVsZERhdGFUeXBlIGB0YWdGaWVsZDoidGFnTmFtZSJg"
 )
 
 func toFieldUpperFormat(s string) string {
