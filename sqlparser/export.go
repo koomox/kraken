@@ -16,6 +16,16 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
+func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, computedName, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
+	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
+	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
+	element += data.ToComputedFormat(structPrefix, computedName)
+
+	return WriteFile(element, fileName)
+}
+
 func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTable) error {
 	tableSuffix := "Table"
 	var tables []string
