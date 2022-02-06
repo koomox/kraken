@@ -51,7 +51,7 @@ func findTableName(s, sub string) (element string) {
 
 func FromFile(filename string)(elements []MetadataTable) {
 	element := &MetadataTable{}
-	FromFile(func(s string){
+	readFile(func(s string){
 		if s == "" || strings.HasPrefix(s, "--") || strings.HasPrefix(s, "CREATE DATABASE"){
 			return
 		}
