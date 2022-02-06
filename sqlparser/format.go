@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	structFormat = "type structName struct {\ncontentStr\n}"
+	structFormat      = "type structName struct {\ncontentStr\n}"
 	structFieldFormat = "CWZpZWxkTmFtZSBmaWVsZERhdGFUeXBlIGB0YWdGaWVsZDoidGFnTmFtZSJg"
 )
 
@@ -30,7 +30,7 @@ func toFieldUpperFormat(s string) string {
 	return string(ch)
 }
 
-func (m *MetadataTable)toStructFieldFormat(tagField string) (elements []string) {
+func (m *MetadataTable) toStructFieldFormat(tagField string) (elements []string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(structFieldFormat)
 	var element string
 	for i := 0; i < len(m.Fields); i++ {
@@ -48,7 +48,7 @@ func (m *MetadataTable)toStructFieldFormat(tagField string) (elements []string) 
 	return
 }
 
-func (m *MetadataTable)ToStructFormat(tagField string) (b string) {
+func (m *MetadataTable) ToStructFormat(tagField string) (b string) {
 	elements := m.toStructFieldFormat(tagField)
 	b = strings.Replace(structFormat, "structName", toFieldUpperFormat(m.Name), -1)
 	b = strings.Replace(b, "contentStr", strings.Join(elements, "\n"), -1)

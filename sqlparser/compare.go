@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	compareFormat = "ZnVuYyAobyAqc3RydWN0TmFtZSkgZnVuY05hbWUoZWxlbWVudCAqc3RydWN0TmFtZSkgYm9vbCB7CmNvbnRlbnRGaWVsZAoJcmV0dXJuIHRydWUKfQ"
+	compareFormat    = "ZnVuYyAobyAqc3RydWN0TmFtZSkgZnVuY05hbWUoZWxlbWVudCAqc3RydWN0TmFtZSkgYm9vbCB7CmNvbnRlbnRGaWVsZAoJcmV0dXJuIHRydWUKfQ"
 	compareSubFormat = "CWlmIG8uZmllbGROYW1lICE9IGVsZW1lbnQuZmllbGROYW1lIHsKCQlyZXR1cm4gZmFsc2UKCX0"
 )
 
-func (m *MetadataTable)ToStructCompareFormat(funcName string) string {
+func (m *MetadataTable) ToStructCompareFormat(funcName string) string {
 	return m.toStructCompare(funcName)
 }
 
@@ -22,7 +22,7 @@ func toStructCompare(contentField, structName, funcName string) (b string) {
 	return
 }
 
-func (m *MetadataTable)toStructCompare(funcName string) (b string) {
+func (m *MetadataTable) toStructCompare(funcName string) (b string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareSubFormat)
 	structName := toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)

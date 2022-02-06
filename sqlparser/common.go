@@ -64,12 +64,12 @@ var (
 )
 
 type MetadataTable struct {
-	Name string
+	Name   string
 	Fields []Field
 }
 
 type Field struct {
-	Name string
+	Name     string
 	DataType string
 }
 

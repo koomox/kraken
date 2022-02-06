@@ -49,16 +49,16 @@ func findTableName(s, sub string) (element string) {
 	return
 }
 
-func FromFile(filename string)(elements []MetadataTable) {
+func FromFile(filename string) (elements []MetadataTable) {
 	element := &MetadataTable{}
-	readFile(func(s string){
-		if s == "" || strings.HasPrefix(s, "--") || strings.HasPrefix(s, "CREATE DATABASE"){
+	readFile(func(s string) {
+		if s == "" || strings.HasPrefix(s, "--") || strings.HasPrefix(s, "CREATE DATABASE") {
 			return
 		}
 		lines := strings.Split(s, " ")
 		switch lines[0] {
 		case "DESC", "USE", "SELECT", "INSERT", "GRANT", "PRIMARY", "UNIQUE", "DROP":
-				return
+			return
 		default:
 		}
 		if strings.HasPrefix(s, ")") {
