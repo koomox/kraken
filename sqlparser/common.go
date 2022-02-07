@@ -71,6 +71,7 @@ type MetadataTable struct {
 type Field struct {
 	Name     string
 	DataType string
+	Unique   bool
 }
 
 func findDataTypeString(s string) string {

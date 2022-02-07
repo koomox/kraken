@@ -10,6 +10,9 @@ func findField(s string) (element Field) {
 		if b[i] == "" {
 			continue
 		}
+		if element.Name != "" && strings.EqualFold(b[i], "UNIQUE") {
+			element.Unique = true
+		}
 		if findKeywordString(b[i]) != "" {
 			continue
 		}

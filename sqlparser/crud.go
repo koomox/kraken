@@ -12,6 +12,7 @@ const (
 	computedSubFormat = "CWlmIHMuZmllbGROYW1lICE9IGQuZmllbGROYW1lIHsKCQljb21tYW5kICs9IGZtdC5TcHJpbnRmKGB0YWdOYW1lPXZhbHVlRmllbGQsIGAsIGQuZmllbGROYW1lKQoJfQ"
 	queryFormat       = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgKGVsZW1lbnRzIFtdKnN0cnVjdE5hbWUpIHsKCWRhdGEsIGxlbmd0aCA6PSBteXNxbC5RdWVyeShjb21tYW5kKQoJaWYgZGF0YSA9PSBuaWwgfHwgbGVuZ3RoIDw9IDAgewoJCXJldHVybgoJfQoJYiA6PSAqZGF0YQoJZm9yIGkgOj0gMDsgaSA8IGxlbmd0aDsgaSsrIHsKCQllbGVtZW50IDo9IHBhcnNlcihiW2ldKQoJCWVsZW1lbnRzID0gYXBwZW5kKGVsZW1lbnRzLCBlbGVtZW50KQoJfQoJcmV0dXJuCn0"
 	parserFormat      = "ZnVuYyBmdW5jTmFtZSh2YWx1ZXNGaWVsZCBtYXBbc3RyaW5nXXN0cmluZykgKnN0cnVjdE5hbWUgewoJcmV0dXJuICZzdHJ1Y3ROYW1lewoJCWNvbnRlbnRGaWVsZAoJfQp9"
+	selectFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFNFTEVDVCAqIEZST00gJXYgV0hFUkUgZmllbGROYW1lPXZhbHVlRmllbGRgLCB0YWJsZSwgZmllbGROYW1lKQp9"
 )
 
 func (m *MetadataTable) ToInsertFormat(structPrefix, funcName string) (b string) {
@@ -105,8 +106,10 @@ func (m *MetadataTable) toParserFormat(valuesField, structPrefix, funcName strin
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "FLOAT", "DOUBLE":
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 			elements = append(elements, fmt.Sprintf(`%v:database.ParseInt(%v["%v"]),`, toFieldUpperFormat(m.Fields[i].Name), valuesField, m.Fields[i].Name))
+		case "BIGINT":
+			elements = append(elements, fmt.Sprintf(`%v:database.ParseInt64(%v["%v"]),`, toFieldUpperFormat(m.Fields[i].Name), valuesField, m.Fields[i].Name))
 		default:
 			elements = append(elements, fmt.Sprintf(`%v:%v["%v"],`, toFieldUpperFormat(m.Fields[i].Name), valuesField, m.Fields[i].Name))
 		}
@@ -140,4 +143,35 @@ func (m *MetadataTable) toComputedFormat(structPrefix, funcName string) (b strin
 
 	contentField := strings.Join(elements, "\n")
 	return toComputedFormat(contentField, structName, funcName)
+}
+
+func (m *MetadataTable)ToSelectFuncFormat(funcName string) (b string) {
+	fieldsLen := len(m.Fields)
+	for i := 0; i < fieldsLen; i++ {
+		if !m.Fields[i].Unique {
+			continue
+		}
+		b += "\n\n"
+		b += toSelectFuncFormat(m.Fields[i].Name, m.Fields[i].DataType, funcName)
+	}
+	return
+}
+
+func toSelectFuncFormat(name, dateType, funcName string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName + toFieldUpperFormat(name), -1)
+	b = strings.Replace(b, "fieldName", name, -1)
+
+	switch dateType {
+	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		b = strings.Replace(b, "fieldType", "int", -1)
+		b = strings.Replace(b, "valueField", `%v`, -1)
+	case "BIGINT":
+		b = strings.Replace(b, "fieldType", "int64", -1)
+		b = strings.Replace(b, "valueField", `%v`, -1)
+	default:
+		b = strings.Replace(b, "fieldType", "", -1)
+		b = strings.Replace(b, "valueField", `"%v"`, -1)
+	}
+	return
 }

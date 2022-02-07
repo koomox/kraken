@@ -10,8 +10,7 @@ import (
 
 const (
 	parsetIntImportFormat = "aW1wb3J0ICgKICAgICJzdHJjb252Igop"
-	parsetIntFuncFormat   = "ZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCWQsIGVyciA6PSBzdHJjb252LlBhcnNlSW50KHMsIDEwLCA2NCkKICAgIGlmIGVyciAhPSBuaWwgewogICAgCXJldHVybiAwCiAgICB9CiAgICByZXR1cm4gaW50KGQpCn0"
-)
+	parsetIntFuncFormat = "ZnVuYyBQYXJzZUludDY0KHMgc3RyaW5nKSBpbnQ2NCB7CglkLCBlcnIgOj0gc3RyY29udi5QYXJzZUludChzLCAxMCwgNjQpCglpZiBlcnIgIT0gbmlsIHsKCQlyZXR1cm4gMAoJfQoJcmV0dXJuIGQKfQoKZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCXJldHVybiBpbnQoUGFyc2VJbnQ2NChzKSkKfQ")
 
 func MkdirAll(p string) (err error) {
 	if _, err = os.Stat(p); os.IsNotExist(err) {
@@ -28,6 +27,7 @@ func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryNa
 	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
 	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
 	element += data.ToComputedFormat(structPrefix, computedName)
+	element += data.ToSelectFuncFormat("select")
 
 	return WriteFile(element, fileName)
 }

@@ -38,8 +38,10 @@ func (m *MetadataTable) toStructFieldFormat(tagField string) (elements []string)
 		element = strings.Replace(element, "tagField", tagField, -1)
 		element = strings.Replace(element, "tagName", m.Fields[i].Name, -1)
 		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "FLOAT", "DOUBLE":
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 			element = strings.Replace(element, "fieldDataType", "int", -1)
+		case "BIGINT":
+			element = strings.Replace(element, "fieldDataType", "int64", -1)
 		default:
 			element = strings.Replace(element, "fieldDataType", "string", -1)
 		}
