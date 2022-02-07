@@ -21,9 +21,9 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
-func ExportStoreFormatFile(pkgName, importHead, mapFunc, structPrefix, tableName, fileName string, data MetadataTable) error {
+func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToStoreFormat(mapFunc, structPrefix, tableName)
+	element += data.ToStoreFormat(mapFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName)
 
 	return WriteFile(element, fileName)
 }
