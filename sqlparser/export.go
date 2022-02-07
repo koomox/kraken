@@ -21,6 +21,13 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
+func ExportStoreFormatFile(pkgName, importHead, mapFunc, structPrefix, tableName, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToStoreFormat(mapFunc, structPrefix, tableName)
+
+	return WriteFile(element, fileName)
+}
+
 func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, compareFunc, updateFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToPublicCrudFormat(insertFunc, selectFunc, compareFunc, updateFunc, structPrefix, tableName)
