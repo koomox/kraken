@@ -21,12 +21,20 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
+func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, compareFunc, updateFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToPublicCrudFormat(insertFunc, selectFunc, compareFunc, updateFunc, structPrefix, tableName)
+	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
+
+	return WriteFile(element, fileName)
+}
+
 func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, computedName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
 	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
 	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
-	element += data.ToComputedFormat(structPrefix, computedName)
+	element += data.ToCompareCrudFormat(structPrefix, computedName)
 	element += data.ToSelectFuncFormat("select")
 
 	return WriteFile(element, fileName)
