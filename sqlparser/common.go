@@ -74,6 +74,22 @@ type Field struct {
 	Unique   bool
 }
 
+func (f *MetadataTable)ToUpperCase() string {
+	return toFieldUpperFormat(f.Name)
+}
+
+func (f *MetadataTable)ToLowerCase() string {
+	return toFieldLowerFormat(f.Name)
+}
+
+func (f *Field)ToUpperCase() string {
+	return toFieldUpperFormat(f.Name)
+}
+
+func (f *Field)ToLowerCase() string {
+	return toFieldLowerFormat(f.Name)
+}
+
 func findDataTypeString(s string) string {
 	for i, v := range dataTypeKeywords {
 		if strings.EqualFold(s, v) || strings.HasPrefix(s, v) {

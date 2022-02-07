@@ -30,6 +30,18 @@ func toFieldUpperFormat(s string) string {
 	return string(ch)
 }
 
+func toFieldLowerFormat(s string) string {
+	var ch []rune
+	for _, c := range s {
+		if c == '_' {
+			continue
+		}
+		ch = append(ch, unicode.ToLower(c))
+	}
+
+	return string(ch)
+}
+
 func (m *MetadataTable) toStructFieldFormat(tagField string) (elements []string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(structFieldFormat)
 	var element string
