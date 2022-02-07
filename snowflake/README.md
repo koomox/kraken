@@ -26,16 +26,16 @@ func main() {
 	var wg sync.WaitGroup
 	s, err := snowflake.NewSnowflake(int64(0), int64(0))
 	if err != nil {
-        fmt.Println(err.Error())
-        return
-    }
-    for i := 0; i < 10; i++ {
-        wg.Add(1)
-        go func() {
-            defer wg.Done()
-            fmt.Printf("ID: %v\n", s.NextID())
-        }()
-    }
-    wg.Wait()
+		fmt.Println(err.Error())
+		return
+	}
+	for i := 0; i < 1000000; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Printf("ID: %v\n", s.NextID())
+		}()
+	}
+	wg.Wait()
 }
 ```
