@@ -23,6 +23,20 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
+func ExportFrontendColumnsFormatFile(head, foot, columnsName string, fileName string, data MetadataTable) error {
+	element := head + "\n\n"
+	element += data.ToFrontendColumnsFormat(columnsName) + "\n\n"
+	element += foot
+	return WriteFile(element, fileName)
+}
+
+func ExportForntendParseFormatFile(pkgName, importHead, funcPrefix, tagName, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToForntendParseFormat(funcPrefix) + "\n\n"
+	element += data.ToStructFormat(tagName)
+	return WriteFile(element, fileName)
+}
+
 func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, whereFunc, selectFunc, structPrefix, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToCreateModelFuncFormat(createFunc, structPrefix) + "\n\n"
@@ -30,7 +44,7 @@ func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFu
 	element += data.ToUpdateModelFuncFormat(updateFunc, updateFunc) + "\n\n"
 	element += data.ToRemoveModelFuncFormat(removeFunc, removeFunc) + "\n\n"
 	element += data.ToWhereModelFuncFormat(whereFunc, structPrefix) + "\n\n"
-	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix) + "\n\n"
+	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix)
 	return WriteFile(element, fileName)
 }
 

@@ -2,7 +2,6 @@ package sqlparser
 
 import (
 	"encoding/base64"
-	"fmt"
 	"strings"
 )
 
@@ -30,8 +29,26 @@ func toColumnsFormat(columnsField, contentField string) (b string) {
 	return strings.Replace(b, "contentField", contentField, -1)
 }
 
-func (m *MetadataTable)ToFrontendColumnsFormat()(b string) {
+func (m *MetadataTable)ToFrontendColumnsFormat(columnsName string)(b string) {
+	fieldsLen := len(m.Fields)
+	if columnsName == "" {
+		columnsName = m.ToUpperCase()
+	}
+	var elements []string
+	for i := 0; i < fieldsLen; i++ {
+		switch m.Fields[i].Name {
+		case "id", "uid", "username":
+			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "false", "false", "true", "false", "true"))
+		case "password":
+			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "true", "false", "true", "false", "false"))
+		case "status", "deleted", "created_by", "updated_by", "created_at", "updated_at":
+			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "true", "true", "false", "false", "true"))
+		default:
+			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "false", "true", "true", "true", "true"))
+		}
+	}
 
+	return toColumnsFormat(columnsName, strings.Join(elements, "\n"))
 }
 
 func toParseFuncFormat(funcName, structName, contentField string) (b string) {
@@ -48,6 +65,20 @@ func toParseSubFuncFormat(nameField, fieldName, valueField string) (b string) {
 	return strings.Replace(b, "valueField", valueField, -1)
 }
 
-func (m *MetadataTable)ToForntendParseFormat() (b string) {
-	
+func (m *MetadataTable)ToForntendParseFormat(funcPrefix string) (b string) {
+	fieldsLen := len(m.Fields)
+	funcName := funcPrefix + m.ToUpperCase()
+	var elements []string
+	for i := 0; i < fieldsLen; i++ {
+		switch m.Fields[i].DataType {
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
+		case "BIGINT":
+			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
+		default:
+			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "val"))
+		}
+	}
+
+	return toParseFuncFormat(funcName, m.ToUpperCase(), strings.Join(elements, "\n"))
 }
