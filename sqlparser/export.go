@@ -23,12 +23,13 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
-func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, selectFunc, structPrefix, fileName string, data MetadataTable) error {
+func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, whereFunc, selectFunc, structPrefix, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToCreateModelFuncFormat(createFunc, structPrefix) + "\n\n"
 	element += data.ToCompareModelFuncFormat(compreFunc, structPrefix) + "\n\n"
 	element += data.ToUpdateModelFuncFormat(updateFunc, updateFunc) + "\n\n"
 	element += data.ToRemoveModelFuncFormat(removeFunc, removeFunc) + "\n\n"
+	element += data.ToWhereModelFuncFormat(whereFunc, structPrefix) + "\n\n"
 	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix) + "\n\n"
 	return WriteFile(element, fileName)
 }
@@ -55,12 +56,13 @@ func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc
 	return WriteFile(element, fileName)
 }
 
-func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, whereFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertCrudFormat(insertFunc, structPrefix, tableName) + "\n\n"
 	element += data.ToSelectCrudFormat(selectFunc, structPrefix, tableName) + "\n\n"
 	element += data.ToUpdateCrudFormat(updateFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToRemoveCrudFormat(removeFunc, structPrefix, tableName)
+	element += data.ToRemoveCrudFormat(removeFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToWhereCrudFormat(whereFunc, structPrefix, tableName)
 	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
 
 	return WriteFile(element, fileName)

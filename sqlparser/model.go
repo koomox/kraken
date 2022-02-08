@@ -13,6 +13,7 @@ const (
 	updateModelFuncFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CmNvbnRlbnRGaWVsZAogICAgcmV0dXJuIGZpZWxkTmFtZS51cGRhdGVGdW5jKHBhcmFtc1VwZGF0ZSkKfQ"
 	updateModelSubFuncFormat = "CWNvbW1hbmQgKz0gZm10LlNwcmludGYoYCwgZmllbGROYW1lPWZpZWxkVHlwZWAsIGZpZWxkTmFtZSk"
 	removeModelFuncFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CglyZXR1cm4gc3ViRnVuYyh2YWx1ZXNGaWVsZCkKfQ"
+	whereModelFuncFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgc3RydWN0TmFtZSB7CglyZXR1cm4gc3ViRnVuYyhjb21tYW5kKQp9"
 	selectModelFuncFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSByZXN1bHRGaWVsZCB7CglyZXR1cm4gc3RydWN0RmllbGQuc3ViRnVuYyhmaWVsZE5hbWUpCn0"
 )
 
@@ -233,4 +234,18 @@ func (m *MetadataTable)ToSelectModelFuncFormat(funcPrefix, structPrefix string) 
 	}
 
 	return strings.Join(elements, "\n\n")
+}
+
+func toWhereModelFuncFormat(funcName, subFunc, structName string)(b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(whereModelFuncFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "structName", structName, -1)
+	return strings.Replace(b, "subFunc", subFunc, -1)
+}
+
+func (m *MetadataTable)ToWhereModelFuncFormat(funcPrefix, structPrefix string) (b string) {
+	subFunc := m.ToLowerCase() + "." + funcPrefix
+	structName := "[]*" + structPrefix + m.ToUpperCase()
+	funcName := funcPrefix + m.ToUpperCase()
+	return toWhereModelFuncFormat(funcName, subFunc, structName)
 }

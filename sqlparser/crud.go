@@ -12,9 +12,10 @@ const (
 	parserFormat      = "ZnVuYyBmdW5jTmFtZSh2YWx1ZXNGaWVsZCBtYXBbc3RyaW5nXXN0cmluZykgKnN0cnVjdE5hbWUgewoJcmV0dXJuICZzdHJ1Y3ROYW1lewoJCWNvbnRlbnRGaWVsZAoJfQp9"
 	selectFormat   = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFNFTEVDVCAqIEZST00gJXYgV0hFUkUgZmllbGROYW1lPXZhbHVlRmllbGRgLCB0YWJsZSwgZmllbGROYW1lKQp9"
 	insertCrudFormat = "ZnVuYyBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKCXJldHVybiBteXNxbC5FeGVjKGluc2VydChlbGVtZW50LCB0YWJsZU5hbWUpKQp9"
-	selectCrudFormat = "ZnVuYyBmdW5jTmFtZSgpIChlbGVtZW50cyBbXSpzdHJ1Y3ROYW1lKSB7CglyZXR1cm4gcXVlcnkoc3ViRnVuYyh0YWJsZU5hbWUpKQp9"
+	selectCrudFormat = "ZnVuYyBmdW5jTmFtZSgpIHN0cnVjdE5hbWUgewoJcmV0dXJuIHF1ZXJ5KHN1YkZ1bmModGFibGVOYW1lKSkKfQ"
 	updateCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZywgaWQgaW50KSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKHN1YkZ1bmMoY29tbWFuZCwgaWQsIHRhYmxlTmFtZSkpCn0"
 	removeCrudFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CiAgICByZXR1cm4gbXlzcWwuRXhlYyhzdWJGdW5jKHZhbHVlc0ZpZWxkLCB0YWJsZU5hbWUpKQp9"
+	whereCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgc3RydWN0TmFtZSB7CglyZXR1cm4gcXVlcnkoc3ViRnVuYyhjb21tYW5kLCB0YWJsZU5hbWUpKQp9"
 	publicSubFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBbXSpzdHJ1Y3ROYW1lIHsKCXJldHVybiBxdWVyeShzdWJGdW5jKGZpZWxkTmFtZSwgdGFibGVOYW1lKSkKfQ"
 )
 
@@ -230,7 +231,7 @@ func toSelectCrudFormat(funcName, subFunc, structName, tableName string) (b stri
 }
 
 func (m *MetadataTable)ToSelectCrudFormat(funcName, structPrefix, tableName string)(b string) {
-	structName := structPrefix + m.ToUpperCase()
+	structName := "[]*" + structPrefix + m.ToUpperCase()
 	subFunc := structPrefix + funcName
 	return toSelectCrudFormat(funcName, subFunc, structName, tableName)
 }
@@ -245,4 +246,18 @@ func toInsertCrudFormat(funcName, structName, tableName string) (b string) {
 func (m *MetadataTable)ToInsertCrudFormat(funcName, structPrefix, tableName string)(b string) {
 	structName := structPrefix + m.ToUpperCase()
 	return toInsertCrudFormat(funcName, structName, tableName)
+}
+
+func toWhereCrudFormat(funcName, subFunc, structName, tableName string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(whereCrudFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "tableName", tableName, -1)
+	b = strings.Replace(b, "structName", structName, -1)
+	return strings.Replace(b, "subFunc", subFunc, -1)
+}
+
+func (m *MetadataTable)ToWhereCrudFormat(funcName, structPrefix, tableName string)(b string) {
+	structName := "[]*" + structPrefix + m.ToUpperCase()
+	subFunc := structPrefix + funcName
+	return toWhereCrudFormat(funcName, subFunc, structName, tableName)
 }
