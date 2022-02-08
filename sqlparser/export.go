@@ -53,9 +53,10 @@ func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc
 	return WriteFile(element, fileName)
 }
 
-func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToPublicCrudFormat(insertFunc, selectFunc,  updateFunc, structPrefix, tableName)
+	element += data.ToPublicCrudFormat(insertFunc, selectFunc,  updateFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToRemoveCrudFormat(removeFunc, structPrefix)
 	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
 
 	return WriteFile(element, fileName)
