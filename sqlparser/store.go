@@ -11,9 +11,10 @@ const (
 	newStoreFuncFormat = "ZnVuYyBOZXdTdG9yZShjIGNvbW1vbi5CdWNrZXQpIChzdG9yZSAqU3RvcmUpIHsKCXN0b3JlID0gJlN0b3JlewoJCXRhYmxlOiAgIHRhYmxlTmFtZSwKCQlzdG9yZTogICBjLAptYWtlRmllbGQKCQlVcGRhdGVkOiBmYWxzZSwKCX0KCWVsZW1lbnRzIDo9IHF1ZXJ5KGRhdGFiYXNlLlNlbGVjdFRhYmxlKHN0b3JlLnRhYmxlKSkKCWlmIGVsZW1lbnRzID09IG5pbCB8fCBsZW4oZWxlbWVudHMpIDw9IDAgewoJCXJldHVybgoJfQoJZm9yIGksIF8gOj0gcmFuZ2UgZWxlbWVudHMgewoJCWVsZW1lbnQgOj0gZWxlbWVudHNbaV0KCQlzdG9yZS5zdG9yZS5QdXQoZWxlbWVudC5JZCwgZWxlbWVudCkKbWFwcGluZ0ZpZWxkCgl9CgoJcmV0dXJuCn0"
 	mapStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZSgpIHsKbWFrZUZpZWxkCglzdG9yZS5zdG9yZS5DYWxsYmFja0Z1bmMoZnVuYyh2IGludGVyZmFjZXt9KSB7CgkJaWYgdiAhPSBuaWwgewoJCQllbGVtZW50IDo9IHYuKCpzdHJ1Y3ROYW1lKQptYXBwaW5nRmllbGQKCQl9Cgl9KQpzdG9yZUZpZWxkCn0"
 	updateStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShkYXRldGltZSBzdHJpbmcpIHsKCXN0b3JlLlVwZGF0ZWQgPSBmYWxzZQoJc3RvcmUuUGF0Y2ggPSBuaWwKCWVsZW1lbnRzIDo9IHF1ZXJ5KGRhdGFiYXNlLlNlbGVjdFVwZGF0ZWQoZGF0ZXRpbWUsIHN0b3JlLnRhYmxlKSkKCWlmIGVsZW1lbnRzID09IG5pbCB8fCBsZW4oZWxlbWVudHMpIDw9IDAgewoJCXJldHVybgoJfQoJZm9yIGkgOj0gMDsgaSA8IGxlbihlbGVtZW50cyk7IGkrKyB7CgkJZWxlbWVudCA6PSBlbGVtZW50c1tpXQoJCWlmICFzdG9yZS5jb21wYXJlRnVuYyhlbGVtZW50KSB7CgkJCXN0b3JlLnN0b3JlLlB1dChlbGVtZW50LklkLCBlbGVtZW50KQoJCQlzdG9yZS5QYXRjaCA9IGFwcGVuZChzdG9yZS5QYXRjaCwgZWxlbWVudCkKCQkJaWYgIXN0b3JlLlVwZGF0ZWQgewoJCQkJc3RvcmUuVXBkYXRlZCA9IHRydWUKCQkJfQoJCX0KCX0KCWlmIHN0b3JlLlVwZGF0ZWQgewoJCXN0b3JlLm1hcEZ1bmMoKQoJfQp9"
-	compareStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSBib29sIHsKCWlmIHYgOj0gc3RvcmUuc3RvcmUuR2V0KGVsZW1lbnQuSWQpOyB2ICE9IG5pbCB7CgkJaWYgdi4oKnN0cnVjdE5hbWUpLmNvbXBhcmVGdW5jKGVsZW1lbnQpIHsKCQkJcmV0dXJuIHRydWUKCQl9Cgl9CgoJcmV0dXJuIGZhbHNlCn0"
+	compareStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSBib29sIHsKICAgIGlmIHYgOj0gc3RvcmUuc3RvcmUuR2V0KGVsZW1lbnQuSWQpOyB2ICE9IG5pbCB7CiAgICAgICAgcmV0dXJuIHYuKCpzdHJ1Y3ROYW1lKS5jb21wYXJlRnVuYyhlbGVtZW50KQogICAgfQoKICAgIHJldHVybiBmYWxzZQp9"
 	standardStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBHZXQoa2V5IGludCkgaW50ZXJmYWNle30gewoJcmV0dXJuIHN0b3JlLnN0b3JlLkdldChrZXkpCn0KCmZ1bmMgKHN0b3JlICpTdG9yZSkgUmVtb3ZlKGtleSBpbnQpIHsKCXN0b3JlLnN0b3JlLlJlbW92ZShrZXkpCn0KCmZ1bmMgKHN0b3JlICpTdG9yZSkgVmFsdWVzKCkgKGVsZW1lbnRzIFtdKnN0cnVjdE5hbWUpIHsKCXN0b3JlLnN0b3JlLkNhbGxiYWNrRnVuYyhmdW5jKHYgaW50ZXJmYWNle30pIHsKCQlpZiB2ICE9IG5pbCB7CgkJCWVsZW1lbnRzID0gYXBwZW5kKGVsZW1lbnRzLCB2Ligqc3RydWN0TmFtZSkpCgkJfQoJfSkKCXJldHVybgp9CgpmdW5jIChzdG9yZSAqU3RvcmUpIFRvSlNPTigpIChbXWJ5dGUsIGVycm9yKSB7CglyZXR1cm4gc3RvcmUuc3RvcmUuVG9KU09OKCkKfQoKZnVuYyAoc3RvcmUgKlN0b3JlKSBCeUlkKGlkIGludCkgKnN0cnVjdE5hbWUgewoJaWYgdiA6PSBzdG9yZS5HZXQoaWQpOyB2ICE9IG5pbCB7CgkJcmV0dXJuIHYuKCpzdHJ1Y3ROYW1lKQoJfQoKCXJldHVybiBuaWwKfQ"
 	selectStoreFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShmaWVsZE5hbWUgZmlsZWRUeXBlKSAqc3RydWN0TmFtZSB7CglpZiBpLCBmb3VuZCA6PSBzdG9yZS5tYXBGaWVsZDsgZm91bmQgewoJCWlmIHYgOj0gci5HZXQoaSk7IHYgIT0gbmlsIHsKCQkJcmV0dXJuIHYuKCpzdHJ1Y3ROYW1lKQoJCX0KCX0KCglyZXR1cm4gbmlsCn0"
+	selectStoreCallbackFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSAoZWxlbWVudHMgW10qc3RydWN0TmFtZSkgewoJc3RvcmUuc3RvcmUuQ2FsbGJhY2tGdW5jKGZ1bmModiBpbnRlcmZhY2V7fSkgewoJCWlmIHYgIT0gbmlsIHsKCQkJaWYgdi4oKnN0cnVjdE5hbWUpLnN0cnVjdEZpZWxkID09IGZpZWxkTmFtZSB7CgkJCQllbGVtZW50cyA9IGFwcGVuZChlbGVtZW50cywgdi4oKnN0cnVjdE5hbWUpKQoJCQl9CgkJfQoJfSkKCXJldHVybgp9"
 )
 
 func (m *MetadataTable)ToStoreFormat(mapFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName string) (b string) {
@@ -167,21 +168,42 @@ func toSelectStoreFuncFormat(mapField, fieldName, filedType, funcName, structNam
 	return strings.Replace(b, "mapField", mapField, -1)
 }
 
+func toSelectStoreCallbackFuncFormat(funcName, fieldName, fieldType, structField, structName string)(b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectStoreCallbackFuncFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "structName", structName, -1)
+	b = strings.Replace(b, "fieldName", fieldName, -1)
+	b = strings.Replace(b, "fieldType", fieldType, -1)
+	return strings.Replace(b, "structField", structField, -1)
+}
+
 func (m *MetadataTable)toSelectStoreFuncFormat(funcPrefix, structPrefix string) (b string) {
 	structName := structPrefix + toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if !m.Fields[i].Unique {
+		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
 		b += "\n\n"
+		fieldType := ""
+		mapField := ""
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			b += toSelectStoreFuncFormat(fmt.Sprintf("%vMapping[%v]", m.Fields[i].ToUpperCase(), m.Fields[i].Name), m.Fields[i].Name, "int", funcPrefix + m.Fields[i].ToUpperCase(), structName)
+			fieldType = "int"
+			mapField = fmt.Sprintf("%vMapping[%v]", m.Fields[i].ToUpperCase(), m.Fields[i].Name)
 		case "BIGINT":
-			b += toSelectStoreFuncFormat(fmt.Sprintf("%vMapping[%v]", m.Fields[i].ToUpperCase(), m.Fields[i].Name), m.Fields[i].Name, "int64", funcPrefix + m.Fields[i].ToUpperCase(), structName)
+			fieldType = "int64"
+			mapField = fmt.Sprintf("%vMapping[%v]", m.Fields[i].ToUpperCase(), m.Fields[i].Name)
 		default:
-			b += toSelectStoreFuncFormat(fmt.Sprintf("%vMapping[strings.ToLower(%v)]", m.Fields[i].ToUpperCase(), m.Fields[i].Name), m.Fields[i].Name, "string", funcPrefix + m.Fields[i].ToUpperCase(), structName)
+			fieldType = "string"
+			mapField = fmt.Sprintf("%vMapping[strings.ToLower(%v)]", m.Fields[i].ToUpperCase(), m.Fields[i].Name)
+		}
+		funcName := funcPrefix + m.Fields[i].ToUpperCase()
+		switch m.Fields[i].Name {
+		case "created_by":
+			b += toSelectStoreCallbackFuncFormat(funcName, m.Fields[i].Name, fieldType, m.Fields[i].ToUpperCase(), structName)
+		default:
+			b += toSelectStoreFuncFormat(mapField, m.Fields[i].Name, fieldType, funcName, structName)
 		}
 	}
 

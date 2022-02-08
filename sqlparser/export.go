@@ -21,6 +21,31 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
+func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, selectFunc, structPrefix, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToCreateModelFuncFormat(createFunc, structPrefix) + "\n\n"
+	element += data.ToCompareModelFuncFormat(compreFunc, structPrefix) + "\n\n"
+	element += data.ToUpdateModelFuncFormat(updateFunc, updateFunc) + "\n\n"
+	element += data.ToRemoveModelFuncFormat(removeFunc, removeFunc) + "\n\n"
+	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix) + "\n\n"
+	return WriteFile(element, fileName)
+}
+
+func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix, fileName string, data MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
+	element += data.ToSelectStorageFuncFormat(selectPrefix, structPrefix)
+	return WriteFile(element, fileName)
+}
+
+func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fieldSuffix, newFunc, updateFunc, fileName string, data []MetadataTable) error {
+	element := "package " + pkgName + "\n\n" + ToImportStorageFormat(importHead, importPrefix ,data) + "\n\n"
+	element += ToStructStorageFormat(structName, fieldSuffix, data) + "\n\n"
+	element += ToInitialStorageFuncFormat() + "\n\n"
+	element += ToNewStorageFuncFormat(newFunc, newFunc, structName, data) + "\n\n"
+	element += ToUpdateStorageFuncFormat(updateFunc, structName, data) + "\n\n"
+	return WriteFile(element, fileName)
+}
+
 func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToStoreFormat(mapFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName)
@@ -28,21 +53,20 @@ func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc
 	return WriteFile(element, fileName)
 }
 
-func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, compareFunc, updateFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToPublicCrudFormat(insertFunc, selectFunc, compareFunc, updateFunc, structPrefix, tableName)
+	element += data.ToPublicCrudFormat(insertFunc, selectFunc,  updateFunc, structPrefix, tableName)
 	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
 
 	return WriteFile(element, fileName)
 }
 
-func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, computedName, fileName string, data MetadataTable) error {
+func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, selectName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
 	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
 	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
-	element += data.ToCompareCrudFormat(structPrefix, computedName)
-	element += data.ToSelectFuncFormat("select")
+	element += data.ToSelectFuncFormat(selectName)
 
 	return WriteFile(element, fileName)
 }
@@ -58,7 +82,7 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 		if data[i].Name == "" {
 			continue
 		}
-		tables = append(tables, fmt.Sprintf(`%v="%v"`, toFieldUpperFormat(data[i].Name)+tableSuffix, data[i].Name))
+		tables = append(tables, fmt.Sprintf(`%v="%v"`, data[i].ToUpperCase()+tableSuffix, data[i].Name))
 		element += "\n\n"
 		element += data[i].ToStructFormat(tagName)
 	}

@@ -8,12 +8,10 @@ import (
 
 const (
 	insertFormat      = "ZnVuYyBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYElOU0VSVCBJTlRPICV2KGtleXNGaWVsZCkgVkFMVUVTKHZhbHVlc0ZpZWxkKWAsIHRhYmxlLCBlbGVtZW50c0ZpZWxkKQp9"
-	compareCrudFormat    = "ZnVuYyBmdW5jTmFtZShkLCBzICpzdHJ1Y3ROYW1lKSAoY29tbWFuZCBzdHJpbmcpIHsKICAgICAgICBpZiBzLklkICE9IGQuSWQgewogICAgICAgICAgICAgICAgcmV0dXJuCiAgICAgICAgfQpjb250ZW50RmllbGQKICAgICAgICBpZiBjb21tYW5kID09ICIiIHsKICAgICAgICAgICAgICAgIHJldHVybgogICAgICAgIH0KICAgICAgICBpZiBzLkNyZWF0ZWRCeSAhPSBkLkNyZWF0ZWRCeSB7CiAgICAgICAgICAgICAgICBjb21tYW5kICs9IGZtdC5TcHJpbnRmKGBjcmVhdGVkX2J5PSV2LCBgLCBkLkNyZWF0ZWRCeSkKICAgICAgICB9CiAgICAgICAgaWYgcy5VcGRhdGVkQnkgIT0gZC5VcGRhdGVkQnkgewogICAgICAgICAgICAgICAgY29tbWFuZCArPSBmbXQuU3ByaW50ZihgdXBkYXRlZF9ieT0ldiwgYCwgZC5VcGRhdGVkQnkpCiAgICAgICAgfQogICAgICAgIHJldHVybgp9"
-	compareSubCrudFormat = "CWlmIHMuZmllbGROYW1lICE9IGQuZmllbGROYW1lIHsKCQljb21tYW5kICs9IGZtdC5TcHJpbnRmKGB0YWdOYW1lPXZhbHVlRmllbGQsIGAsIGQuZmllbGROYW1lKQoJfQ"
 	queryFormat       = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgKGVsZW1lbnRzIFtdKnN0cnVjdE5hbWUpIHsKCWRhdGEsIGxlbmd0aCA6PSBteXNxbC5RdWVyeShjb21tYW5kKQoJaWYgZGF0YSA9PSBuaWwgfHwgbGVuZ3RoIDw9IDAgewoJCXJldHVybgoJfQoJYiA6PSAqZGF0YQoJZm9yIGkgOj0gMDsgaSA8IGxlbmd0aDsgaSsrIHsKCQllbGVtZW50IDo9IHBhcnNlcihiW2ldKQoJCWVsZW1lbnRzID0gYXBwZW5kKGVsZW1lbnRzLCBlbGVtZW50KQoJfQoJcmV0dXJuCn0"
 	parserFormat      = "ZnVuYyBmdW5jTmFtZSh2YWx1ZXNGaWVsZCBtYXBbc3RyaW5nXXN0cmluZykgKnN0cnVjdE5hbWUgewoJcmV0dXJuICZzdHJ1Y3ROYW1lewoJCWNvbnRlbnRGaWVsZAoJfQp9"
 	selectFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFNFTEVDVCAqIEZST00gJXYgV0hFUkUgZmllbGROYW1lPXZhbHVlRmllbGRgLCB0YWJsZSwgZmllbGROYW1lKQp9"
-	publicFormat = "ZnVuYyBpbnNlcnRGdW5jKGVsZW1lbnQgKnN0cnVjdE5hbWUpIChzcWwuUmVzdWx0LCBlcnJvcikgewogICAgICAgIHJldHVybiBteXNxbC5FeGVjKGluc2VydChlbGVtZW50LCB0YWJsZU5hbWUpKQp9CgpmdW5jIHNlbGVjdEZ1bmMoKSBbXSpzdHJ1Y3ROYW1lIHsKICAgICAgICByZXR1cm4gcXVlcnkoZGF0YWJhc2UuU2VsZWN0VGFibGUodGFibGVOYW1lKSkKfQoKZnVuYyBjb21wYXJlRnVuYyhkLCBzICpzdHJ1Y3ROYW1lKSAoY29tbWFuZCBzdHJpbmcpIHsKICAgICAgICByZXR1cm4gY29tcGFyZShkLCBzKQp9CgpmdW5jIHVwZGF0ZUZ1bmMoY29tbWFuZCBzdHJpbmcsIGlkIGludCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CiAgICAgICAgcmV0dXJuIG15c3FsLkV4ZWMoZGF0YWJhc2UuVXBkYXRlKGNvbW1hbmQsIGlkLCB0YWJsZU5hbWUpKQp9"
+	publicFormat = "ZnVuYyBpbnNlcnRGdW5jKGVsZW1lbnQgKnN0cnVjdE5hbWUpIChzcWwuUmVzdWx0LCBlcnJvcikgewogICAgcmV0dXJuIG15c3FsLkV4ZWMoaW5zZXJ0KGVsZW1lbnQsIHRhYmxlTmFtZSkpCn0KCmZ1bmMgc2VsZWN0RnVuYygpIFtdKnN0cnVjdE5hbWUgewogICAgcmV0dXJuIHF1ZXJ5KGRhdGFiYXNlLlNlbGVjdFRhYmxlKHRhYmxlTmFtZSkpCn0KCmZ1bmMgdXBkYXRlRnVuYyhjb21tYW5kIHN0cmluZywgaWQgaW50KSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKGRhdGFiYXNlLlVwZGF0ZShjb21tYW5kLCBpZCwgdGFibGVOYW1lKSkKfQ"
 	publicSubFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBbXSpzdHJ1Y3ROYW1lIHsKCXJldHVybiBxdWVyeShzdWJGdW5jKGZpZWxkTmFtZSwgdGFibGVOYW1lKSkKfQ"
 )
 
@@ -27,10 +25,6 @@ func (m *MetadataTable) ToQueryFormat(structPrefix, funcName string) (b string) 
 
 func (m *MetadataTable) ToParserFormat(valuesField, structPrefix, funcName string) (b string) {
 	return m.toParserFormat(valuesField, structPrefix, funcName)
-}
-
-func (m *MetadataTable) ToCompareCrudFormat(structPrefix, funcName string) (b string) {
-	return m.toCompareCrudFormat(structPrefix, funcName)
 }
 
 func toInsertFormat(keysField, valuesField, elementsField, structName, funcName string) (b string) {
@@ -55,14 +49,6 @@ func toParserFormat(contentField, valuesField, structName, funcName string) (b s
 	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
 	b = strings.Replace(b, "structName", structName, -1)
 	b = strings.Replace(b, "valuesField", valuesField, -1)
-	b = strings.Replace(b, "contentField", contentField, -1)
-	return
-}
-
-func toCompareCrudFormat(contentField, structName, funcName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareCrudFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
 	b = strings.Replace(b, "contentField", contentField, -1)
 	return
 }
@@ -121,36 +107,10 @@ func (m *MetadataTable) toParserFormat(valuesField, structPrefix, funcName strin
 	return toParserFormat(contentField, valuesField, structName, funcName)
 }
 
-func (m *MetadataTable) toCompareCrudFormat(structPrefix, funcName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareSubCrudFormat)
-	structName := structPrefix + toFieldUpperFormat(m.Name)
-	fieldsLen := len(m.Fields)
-	var elements []string
-	for i := 0; i < fieldsLen; i++ {
-		switch m.Fields[i].Name {
-		case "id", "created_by", "updated_by", "created_at", "updated_at":
-			continue
-		}
-		element := strings.Replace(string(fieldFormat), "fieldName", toFieldUpperFormat(m.Fields[i].Name), -1)
-		element = strings.Replace(element, "tagName", m.Fields[i].Name, -1)
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "FLOAT", "DOUBLE":
-			element = strings.Replace(element, "valueField", `%v`, -1)
-		default:
-			element = strings.Replace(element, "valueField", `"%v"`, -1)
-		}
-
-		elements = append(elements, element)
-	}
-
-	contentField := strings.Join(elements, "\n")
-	return toCompareCrudFormat(contentField, structName, funcName)
-}
-
 func (m *MetadataTable)ToSelectFuncFormat(funcName string) (b string) {
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name != "id" && !m.Fields[i].Unique {
+		if m.Fields[i].Name != "id" && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
 		b += "\n\n"
@@ -178,11 +138,10 @@ func toSelectFuncFormat(name, dateType, funcName string) (b string) {
 	return
 }
 
-func (m *MetadataTable)ToPublicCrudFormat(insertFunc, selectFunc, compareFunc, updateFunc, structPrefix, tableName string) (b string) {
+func (m *MetadataTable)ToPublicCrudFormat(insertFunc, selectFunc, updateFunc, structPrefix, tableName string) (b string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(publicFormat)
 	b = strings.Replace(string(fieldFormat), "insertFunc", insertFunc, -1)
 	b = strings.Replace(b, "selectFunc", selectFunc, -1)
-	b = strings.Replace(b, "compareFunc", compareFunc, -1)
 	b = strings.Replace(b, "updateFunc", updateFunc, -1)
 	b = strings.Replace(b, "structName", structPrefix + toFieldUpperFormat(m.Name), -1)
 	b = strings.Replace(b, "tableName", tableName, -1)
@@ -193,7 +152,7 @@ func (m *MetadataTable)ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix
 	structName := structPrefix + toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name != "id" && !m.Fields[i].Unique {
+		if m.Fields[i].Name != "id" && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
 		subFunc := subPrefix + toFieldUpperFormat(m.Fields[i].Name)
