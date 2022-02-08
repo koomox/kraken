@@ -23,7 +23,7 @@ func toColumnsFormat(columnsField, contentField string) (b string) {
 	return strings.Replace(b, "contentField", contentField, -1)
 }
 
-func ToFrontendColumnsFormat(v interface{}, columnsName, tagName string) (b string) {
+func ToFrontendColumnsFormat(v interface{}, columnsName, tagName, labelName string) (b string) {
 	ref := reflect.ValueOf(v).Elem()
 	if columnsName == "" {
 		columnsName = reflect.TypeOf(v).Elem().Name()
@@ -33,11 +33,11 @@ func ToFrontendColumnsFormat(v interface{}, columnsName, tagName string) (b stri
 		element := ref.Type().Field(i)
 		switch toLowerCase(element.Name) {
 		case "id", "uid", "username":
-			elements = append(elements, toLabelFormat(element.Name, element.Tag.Get(tagName), "false", "true", "false", "false", "true"))
+			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "false", "true", "false", "false", "true"))
 		case "status", "deleted", "created_by", "updated_by", "created_at", "updated_at":
-			elements = append(elements, toLabelFormat(element.Name, element.Tag.Get(tagName), "true", "true", "false", "false", "true"))
+			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "true", "true", "false", "false", "true"))
 		default:
-			elements = append(elements, toLabelFormat(element.Name, element.Tag.Get(tagName), "false", "true", "true", "true", "true"))
+			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "false", "true", "true", "true", "true"))
 		}
 	}
 
@@ -74,7 +74,6 @@ func ToForntendParseFormat(v interface{}, funcName, tagName string) (b string) {
 		case "int64":
 			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt64(val)"))
 		}
-		
 	}
 
 	return toParseFuncFormat(funcName, reflect.TypeOf(v).Elem().Name(), strings.Join(elements, "\n"))
