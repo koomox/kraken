@@ -10,7 +10,9 @@ import (
 
 const (
 	parsetIntImportFormat = "aW1wb3J0ICgKICAgICJzdHJjb252Igop"
-	parsetIntFuncFormat = "ZnVuYyBQYXJzZUludDY0KHMgc3RyaW5nKSBpbnQ2NCB7CglkLCBlcnIgOj0gc3RyY29udi5QYXJzZUludChzLCAxMCwgNjQpCglpZiBlcnIgIT0gbmlsIHsKCQlyZXR1cm4gMAoJfQoJcmV0dXJuIGQKfQoKZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCXJldHVybiBpbnQoUGFyc2VJbnQ2NChzKSkKfQ")
+	parsetIntFuncFormat = "ZnVuYyBQYXJzZUludDY0KHMgc3RyaW5nKSBpbnQ2NCB7CglkLCBlcnIgOj0gc3RyY29udi5QYXJzZUludChzLCAxMCwgNjQpCglpZiBlcnIgIT0gbmlsIHsKCQlyZXR1cm4gMAoJfQoJcmV0dXJuIGQKfQoKZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCXJldHVybiBpbnQoUGFyc2VJbnQ2NChzKSkKfQ"
+	structFuncFormat = "ZnVuYyBTZWxlY3QodGFibGUgc3RyaW5nKSBzdHJpbmcgewoJcmV0dXJuIGZtdC5TcHJpbnRmKGBTRUxFQ1QgKiBGUk9NICV2YCwgdGFibGUpCn0KCmZ1bmMgV2hlcmUoY29tbWFuZCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKCXJldHVybiBmbXQuU3ByaW50ZihgU0VMRUNUICogRlJPTSAldiBXSEVSRSAldmAsIHRhYmxlLCBjb21tYW5kKQp9CgpmdW5jIFVwZGF0ZShjb21tYW5kIHN0cmluZywgaWQgaW50LCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFVQREFURSAldiBTRVQgJXYgV0hFUkUgaWQ9JXZgLCB0YWJsZSwgY29tbWFuZCwgaWQpCn0KCmZ1bmMgUmVtb3ZlKGlkIGludCwgdXBkYXRlZF9ieSBmaWxlVHlwZSwgdXBkYXRlZF9hdCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKCXJldHVybiBmbXQuU3ByaW50ZihgVVBEQVRFICV2IFNFVCBkZWxldGVkPTEsIHVwZGF0ZWRfYnk9JXYsIHVwZGF0ZWRfYXQ9IiV2IiBXSEVSRSBpZD0ldmAsIHRhYmxlLCB1cGRhdGVkX2J5LCB1cGRhdGVkX2F0LCBpZCkKfQ"
+)
 
 func MkdirAll(p string) (err error) {
 	if _, err = os.Stat(p); os.IsNotExist(err) {
@@ -55,8 +57,10 @@ func ExportStoreFormatFile(pkgName, importHead, mapFunc, updateFunc, compareFunc
 
 func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToPublicCrudFormat(insertFunc, selectFunc,  updateFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToRemoveCrudFormat(removeFunc, structPrefix)
+	element += data.ToInsertCrudFormat(insertFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToSelectCrudFormat(selectFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToUpdateCrudFormat(updateFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToRemoveCrudFormat(removeFunc, structPrefix, tableName)
 	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
 
 	return WriteFile(element, fileName)
@@ -72,22 +76,27 @@ func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryNa
 	return WriteFile(element, fileName)
 }
 
-func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTable) error {
-	importHead, _ := base64.RawStdEncoding.DecodeString(parsetIntImportFormat)
+func ExportStructFormatFile(pkgName, importHead, tagName, fileType, fileName string, data []MetadataTable) error {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parsetIntFuncFormat)
+	funcFormat, _ := base64.RawStdEncoding.DecodeString(structFuncFormat)
 	tableSuffix := "Table"
 	var tables []string
 
 	var element string
+	var command string
 	for i, _ := range data {
 		if data[i].Name == "" {
 			continue
 		}
 		tables = append(tables, fmt.Sprintf(`%v="%v"`, data[i].ToUpperCase()+tableSuffix, data[i].Name))
-		element += "\n\n"
-		element += data[i].ToStructFormat(tagName)
+		command += "\n\n"
+		command += data[i].ToStructFormat(tagName)
 	}
-	element = "package " + pkgName + "\n\n" + string(importHead) + "\n\nconst (\n\t" + strings.Join(tables, "\n\t") + "\n)\n\n" + string(fieldFormat) + element
+	element = "package " + pkgName + "\n\n"
+	element += importHead + "\n\n" 
+	element += "const (\n\t" + strings.Join(tables, "\n\t") + "\n)" + "\n\n"
+	element += strings.Replace(string(funcFormat), "fileType", fileType, -1) + "\n\n"
+	element += string(fieldFormat) + command
 
 	return WriteFile(element, fileName)
 }

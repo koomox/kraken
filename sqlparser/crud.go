@@ -11,8 +11,10 @@ const (
 	queryFormat       = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgKGVsZW1lbnRzIFtdKnN0cnVjdE5hbWUpIHsKCWRhdGEsIGxlbmd0aCA6PSBteXNxbC5RdWVyeShjb21tYW5kKQoJaWYgZGF0YSA9PSBuaWwgfHwgbGVuZ3RoIDw9IDAgewoJCXJldHVybgoJfQoJYiA6PSAqZGF0YQoJZm9yIGkgOj0gMDsgaSA8IGxlbmd0aDsgaSsrIHsKCQllbGVtZW50IDo9IHBhcnNlcihiW2ldKQoJCWVsZW1lbnRzID0gYXBwZW5kKGVsZW1lbnRzLCBlbGVtZW50KQoJfQoJcmV0dXJuCn0"
 	parserFormat      = "ZnVuYyBmdW5jTmFtZSh2YWx1ZXNGaWVsZCBtYXBbc3RyaW5nXXN0cmluZykgKnN0cnVjdE5hbWUgewoJcmV0dXJuICZzdHJ1Y3ROYW1lewoJCWNvbnRlbnRGaWVsZAoJfQp9"
 	selectFormat   = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFNFTEVDVCAqIEZST00gJXYgV0hFUkUgZmllbGROYW1lPXZhbHVlRmllbGRgLCB0YWJsZSwgZmllbGROYW1lKQp9"
-	publicFormat  = "ZnVuYyBpbnNlcnRGdW5jKGVsZW1lbnQgKnN0cnVjdE5hbWUpIChzcWwuUmVzdWx0LCBlcnJvcikgewogICAgcmV0dXJuIG15c3FsLkV4ZWMoaW5zZXJ0KGVsZW1lbnQsIHRhYmxlTmFtZSkpCn0KCmZ1bmMgc2VsZWN0RnVuYygpIFtdKnN0cnVjdE5hbWUgewogICAgcmV0dXJuIHF1ZXJ5KGRhdGFiYXNlLlNlbGVjdFRhYmxlKHRhYmxlTmFtZSkpCn0KCmZ1bmMgdXBkYXRlRnVuYyhjb21tYW5kIHN0cmluZywgaWQgaW50KSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKGRhdGFiYXNlLlVwZGF0ZShjb21tYW5kLCBpZCwgdGFibGVOYW1lKSkKfQ"
-	removeCrudFormat = "ZnVuYyBmdW5jTmFtZShpZCBpbnQpIChzcWwuUmVzdWx0LCBlcnJvcikgewoJcmV0dXJuIG15c3FsLkV4ZWMoc3ViRnVuYyhpZCwgc3RydWN0TmFtZSkpCn0"
+	insertCrudFormat = "ZnVuYyBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKCXJldHVybiBteXNxbC5FeGVjKGluc2VydChlbGVtZW50LCB0YWJsZU5hbWUpKQp9"
+	selectCrudFormat = "ZnVuYyBmdW5jTmFtZSgpIChlbGVtZW50cyBbXSpzdHJ1Y3ROYW1lKSB7CglyZXR1cm4gcXVlcnkoc3ViRnVuYyh0YWJsZU5hbWUpKQp9"
+	updateCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZywgaWQgaW50KSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKHN1YkZ1bmMoY29tbWFuZCwgaWQsIHRhYmxlTmFtZSkpCn0"
+	removeCrudFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CiAgICByZXR1cm4gbXlzcWwuRXhlYyhzdWJGdW5jKHZhbHVlc0ZpZWxkLCB0YWJsZU5hbWUpKQp9"
 	publicSubFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBbXSpzdHJ1Y3ROYW1lIHsKCXJldHVybiBxdWVyeShzdWJGdW5jKGZpZWxkTmFtZSwgdGFibGVOYW1lKSkKfQ"
 )
 
@@ -139,16 +141,6 @@ func toSelectFuncFormat(name, dateType, funcName string) (b string) {
 	return
 }
 
-func (m *MetadataTable)ToPublicCrudFormat(insertFunc, selectFunc, updateFunc, structPrefix, tableName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(publicFormat)
-	b = strings.Replace(string(fieldFormat), "insertFunc", insertFunc, -1)
-	b = strings.Replace(b, "selectFunc", selectFunc, -1)
-	b = strings.Replace(b, "updateFunc", updateFunc, -1)
-	b = strings.Replace(b, "structName", structPrefix + toFieldUpperFormat(m.Name), -1)
-	b = strings.Replace(b, "tableName", tableName, -1)
-	return
-}
-
 func (m *MetadataTable)ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName string)(b string) {
 	structName := structPrefix + toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)
@@ -183,15 +175,74 @@ func toPublicSubCrudFormat(funcName, fieldName, fieldType, subFunc, structName, 
 	return
 }
 
-func toRemoveCrudFormat(funcName, subFunc, structName string) (b string) {
+func toRemoveCrudFormat(funcName, paramsField, subFunc, valuesField, tableName string) (b string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(removeCrudFormat)
 	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
 	b = strings.Replace(b, "subFunc", subFunc, -1)
+	b = strings.Replace(b, "tableName", tableName, -1)
+	b = strings.Replace(b, "valuesField", valuesField, -1)
+	return strings.Replace(b, "paramsField", paramsField, -1)
+}
+
+func (m *MetadataTable)ToRemoveCrudFormat(funcName, structPrefix, tableName string)(b string) {
+	subFunc := structPrefix + funcName
+	fieldsLen := len(m.Fields)
+	var params []string
+	var values []string
+	for i := 0; i < fieldsLen; i++ {
+		switch m.Fields[i].Name {
+		case "id", "updated_by", "updated_at":
+		default:
+			continue
+		}
+		switch m.Fields[i].DataType {
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
+		case "BIGINT":
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
+		default:
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
+		}
+		values = append(values, m.Fields[i].Name)
+	}
+
+	return toRemoveCrudFormat(funcName, strings.Join(params, ", "), subFunc, strings.Join(values, ", "), tableName)
+}
+
+func toUpdateCrudFormat(funcName, subFunc, tableName string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateCrudFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "subFunc", subFunc, -1)
+	return strings.Replace(b, "tableName", tableName, -1)
+}
+
+func (m *MetadataTable)ToUpdateCrudFormat(funcName, structPrefix, tableName string)(b string) {
+	subFunc := structPrefix + funcName
+	return toUpdateCrudFormat(funcName, subFunc, tableName)
+}
+
+func toSelectCrudFormat(funcName, subFunc, structName, tableName string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectCrudFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "subFunc", subFunc, -1)
+	b = strings.Replace(b, "tableName", tableName, -1)
 	return strings.Replace(b, "structName", structName, -1)
 }
 
-func (m *MetadataTable)ToRemoveCrudFormat(funcName, structPrefix string)(b string) {
+func (m *MetadataTable)ToSelectCrudFormat(funcName, structPrefix, tableName string)(b string) {
 	structName := structPrefix + m.ToUpperCase()
 	subFunc := structPrefix + funcName
-	return toRemoveCrudFormat(funcName, subFunc, structName)
+	return toSelectCrudFormat(funcName, subFunc, structName, tableName)
+}
+
+func toInsertCrudFormat(funcName, structName, tableName string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(insertCrudFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "tableName", tableName, -1)
+	return strings.Replace(b, "structName", structName, -1)
+}
+
+func (m *MetadataTable)ToInsertCrudFormat(funcName, structPrefix, tableName string)(b string) {
+	structName := structPrefix + m.ToUpperCase()
+	return toInsertCrudFormat(funcName, structName, tableName)
 }

@@ -12,7 +12,7 @@ const (
 	compareModelSubFuncFormat = "ICAgIGlmIGZpZWxkTmFtZSAhPSBlbGVtZW50LnN0cnVjdEZpZWxkIHsKICAgICAgICBjb21tYW5kID0gYXBwZW5kKGNvbW1hbmQsIGZtdC5TcHJpbnRmKGBmaWVsZE5hbWU9ZmllbGRUeXBlYCwgZmllbGROYW1lKSkKICAgIH0"
 	updateModelFuncFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CmNvbnRlbnRGaWVsZAogICAgcmV0dXJuIGZpZWxkTmFtZS51cGRhdGVGdW5jKHBhcmFtc1VwZGF0ZSkKfQ"
 	updateModelSubFuncFormat = "CWNvbW1hbmQgKz0gZm10LlNwcmludGYoYCwgZmllbGROYW1lPWZpZWxkVHlwZWAsIGZpZWxkTmFtZSk"
-	removeModelFuncFormat = "ZnVuYyBmdW5jTmFtZShpZCBpbnQpIChzcWwuUmVzdWx0LCBlcnJvcikgewoJcmV0dXJuIGZpZWxkTmFtZS5zdWJGdW5jKGlkKQp9"
+	removeModelFuncFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CglyZXR1cm4gc3ViRnVuYyh2YWx1ZXNGaWVsZCkKfQ"
 	selectModelFuncFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSByZXN1bHRGaWVsZCB7CglyZXR1cm4gc3RydWN0RmllbGQuc3ViRnVuYyhmaWVsZE5hbWUpCn0"
 )
 
@@ -168,16 +168,38 @@ func (m *MetadataTable)ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (b
 	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), "command, id")
 }
 
-func toRemoveModelFuncFormat(funcName, fieldName, subFunc string) (b string) {
+func toRemoveModelFuncFormat(funcName, paramsField, subFunc, valuesField string) (b string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(removeModelFuncFormat)
 	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	return strings.Replace(b, "subFunc", subFunc, -1)
+	b = strings.Replace(b, "paramsField", paramsField, -1)
+	b = strings.Replace(b, "subFunc", subFunc, -1)
+	return strings.Replace(b, "valuesField", valuesField, -1)
 }
 
 func (m *MetadataTable)ToRemoveModelFuncFormat(funcPrefix, removeFunc string)(b string) {
+	subFunc := m.ToLowerCase() + "." + removeFunc
 	funcName := funcPrefix + m.ToUpperCase()
-	return toRemoveModelFuncFormat(funcName, m.ToLowerCase(), removeFunc)
+	fieldsLen := len(m.Fields)
+	var params []string
+	var values []string
+	for i := 0; i < fieldsLen; i++ {
+		switch m.Fields[i].Name {
+		case "id", "updated_by", "updated_at":
+		default:
+			continue
+		}
+		switch m.Fields[i].DataType {
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
+		case "BIGINT":
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
+		default:
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
+		}
+		values = append(values, m.Fields[i].Name)
+	}
+
+	return toRemoveModelFuncFormat(funcName, strings.Join(params, ", "), subFunc, strings.Join(values, ", "))
 }
 
 func toSelectModelFuncFormat(funcName, fieldName, fieldType, resultField, structField, subFunc string)(b string) {
