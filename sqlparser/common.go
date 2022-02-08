@@ -82,12 +82,20 @@ func (f *MetadataTable)ToLowerCase() string {
 	return toFieldLowerFormat(f.Name)
 }
 
+func (f *MetadataTable)ToLowerCamelCase() string {
+	return toLowerCamelFormat(f.Name)
+}
+
 func (f *Field)ToUpperCase() string {
 	return toFieldUpperFormat(f.Name)
 }
 
 func (f *Field)ToLowerCase() string {
 	return toFieldLowerFormat(f.Name)
+}
+
+func (f *Field)ToLowerCamelCase() string {
+	return toLowerCamelFormat(f.Name)
 }
 
 func findDataTypeString(s string) string {

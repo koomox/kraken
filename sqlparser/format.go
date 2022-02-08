@@ -42,6 +42,25 @@ func toFieldLowerFormat(s string) string {
 	return string(ch)
 }
 
+func toLowerCamelFormat(s string) string {
+	isSymbol := false
+	var ch []rune
+	for _, c := range s {
+		if c == '_' {
+			isSymbol = true
+			continue
+		}
+		if isSymbol && c != '_' {
+			ch = append(ch, unicode.ToUpper(c))
+			isSymbol = false
+			continue
+		}
+		ch = append(ch, c)
+	}
+
+	return string(ch)
+}
+
 func (m *MetadataTable) toStructFieldFormat(tagField string) (elements []string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(structFieldFormat)
 	var element string
