@@ -43,3 +43,39 @@ func ToFrontendColumnsFormat(v interface{}, columnsName, tagName string) (b stri
 
 	return toColumnsFormat(columnsName, strings.Join(elements, "\n"))
 }
+
+func toParseFuncFormat(funcName, structName, contentField string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parseFuncFormat)
+	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
+	b = strings.Replace(b, "structName", structName, -1)
+	return strings.Replace(b, "contentField", contentField, -1)
+}
+
+func toParseSubFuncFormat(nameField, fieldName, valueField string) (b string) {
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parseSubFuncFormat)
+	b = strings.Replace(string(fieldFormat), "nameField", nameField, -1)
+	b = strings.Replace(b, "fieldName", fieldName, -1)
+	return strings.Replace(b, "valueField", valueField, -1)
+}
+
+func ToForntendParseFormat(v interface{}, funcName, tagName string) (b string) {
+	ref := reflect.ValueOf(v).Elem()
+	funcName += reflect.TypeOf(v).Elem().Name()
+	var elements []string
+	for i := 0; i < ref.NumField(); i++ {
+		element := ref.Type().Field(i)
+		switch element.Type.String() {
+		case "struct":
+			continue
+		case "string":
+			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "val"))
+		case "int", "int8", "int16", "int32":
+			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt(val)"))
+		case "int64":
+			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt64(val)"))
+		}
+		
+	}
+
+	return toParseFuncFormat(funcName, reflect.TypeOf(v).Elem().Name(), strings.Join(elements, "\n"))
+}
