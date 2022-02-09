@@ -32,41 +32,38 @@ func (m *MetadataTable)ToCreateModelFuncFormat(funcPrefix, structPrefix string) 
 	fieldsLen := len(m.Fields)
 	var params []string
 	var elements []string
-	createdBy := false
-	createdAt := false
+	createdBy := ""
+	createdAt := ""
 	for i := 0; i < fieldsLen; i++ {
-		switch m.Fields[i].Name {
-		case "id":
-			continue
-		case "status", "deleted":
-			elements = append(elements, fmt.Sprintf("\t\t%v: 0,", m.Fields[i].ToUpperCase()))
-			continue
-		case "created_by", "updated_by":
-			createdBy = true
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_by"))
-			continue
-		case "created_at", "updated_at":
-			createdAt = true
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_at"))
-			continue
-		}
+		dataType := ""
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
+			dataType = "int"
 		case "BIGINT":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
+			dataType = "int64"
 		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
+			dataType = "string"
+		}
+		switch m.Fields[i].Name {
+		case "id":
+		case "status", "deleted":
+			elements = append(elements, fmt.Sprintf("\t\t%v: 0,", m.Fields[i].ToUpperCase()))
+		case "created_by", "updated_by":
+			createdBy = dataType
+			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_by"))
+		case "created_at", "updated_at":
+			createdAt = dataType
+			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_at"))
+		default:
+			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, dataType))
 			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
 		}
 	}
-	if createdBy {
-		params = append(params, fmt.Sprintf("%v %v", "created_by", "string"))
+	if createdBy != "" {
+		params = append(params, fmt.Sprintf("%v %v", "created_by", createdBy))
 	}
-	if createdAt {
-		params = append(params, fmt.Sprintf("%v %v", "created_at", "string"))
+	if createdAt != "" {
+		params = append(params, fmt.Sprintf("%v %v", "created_at", createdAt))
 	}
 
 	return toCreateModelFuncFormat(funcName, structName, strings.Join(params, ", "), m.ToLowerCase(), strings.Join(elements, "\n"))
