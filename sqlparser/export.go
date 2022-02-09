@@ -11,7 +11,7 @@ import (
 const (
 	parsetIntImportFormat = "aW1wb3J0ICgKICAgICJzdHJjb252Igop"
 	parsetIntFuncFormat = "ZnVuYyBQYXJzZUludDY0KHMgc3RyaW5nKSBpbnQ2NCB7CglkLCBlcnIgOj0gc3RyY29udi5QYXJzZUludChzLCAxMCwgNjQpCglpZiBlcnIgIT0gbmlsIHsKCQlyZXR1cm4gMAoJfQoJcmV0dXJuIGQKfQoKZnVuYyBQYXJzZUludChzIHN0cmluZykgaW50IHsKCXJldHVybiBpbnQoUGFyc2VJbnQ2NChzKSkKfQ"
-	structFuncFormat = "ZnVuYyBTZWxlY3QodGFibGUgc3RyaW5nKSBzdHJpbmcgewogICAgcmV0dXJuIGZtdC5TcHJpbnRmKGBTRUxFQ1QgKiBGUk9NICV2YCwgdGFibGUpCn0KCmZ1bmMgV2hlcmUoY29tbWFuZCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgU0VMRUNUICogRlJPTSAldiBXSEVSRSAldmAsIHRhYmxlLCBjb21tYW5kKQp9CgpmdW5jIFVwZGF0ZShjb21tYW5kIHN0cmluZywgaWQgaW50LCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CiAgICByZXR1cm4gZm10LlNwcmludGYoYFVQREFURSAldiBTRVQgJXYgV0hFUkUgaWQ9JXZgLCB0YWJsZSwgY29tbWFuZCwgaWQpCn0KCmZ1bmMgUmVtb3ZlKGlkIGludCwgdXBkYXRlZF9ieSBmaWxlVHlwZSwgdXBkYXRlZF9hdCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgVVBEQVRFICV2IFNFVCBkZWxldGVkPTEsIHVwZGF0ZWRfYnk9JXYsIHVwZGF0ZWRfYXQ9IiV2IiBXSEVSRSBpZD0ldmAsIHRhYmxlLCB1cGRhdGVkX2J5LCB1cGRhdGVkX2F0LCBpZCkKfQoKZnVuYyBVcGRhdGVUaWNrZXIodXBkYXRlZF9hdCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgU0VMRUNUICogRlJPTSAldiBXSEVSRSB1cGRhdGVkX2F0ID4gIiV2ImAsIHRhYmxlLCB1cGRhdGVkX2F0KQp9"
+	structFuncFormat = "ZnVuYyBTZWxlY3QodGFibGUgc3RyaW5nKSBzdHJpbmcgewogICAgcmV0dXJuIGZtdC5TcHJpbnRmKGBTRUxFQ1QgKiBGUk9NICV2YCwgdGFibGUpCn0KCmZ1bmMgV2hlcmUoY29tbWFuZCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgU0VMRUNUICogRlJPTSAldiBXSEVSRSAldmAsIHRhYmxlLCBjb21tYW5kKQp9CgpmdW5jIFVwZGF0ZShjb21tYW5kIHN0cmluZywgaWQgaWRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CiAgICByZXR1cm4gZm10LlNwcmludGYoYFVQREFURSAldiBTRVQgJXYgV0hFUkUgaWQ9JXZgLCB0YWJsZSwgY29tbWFuZCwgaWQpCn0KCmZ1bmMgUmVtb3ZlKGlkIGlkVHlwZSwgdXBkYXRlZF9ieSB1cGRhdGVkVHlwZSwgdXBkYXRlZF9hdCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgVVBEQVRFICV2IFNFVCBkZWxldGVkPTEsIHVwZGF0ZWRfYnk9JXYsIHVwZGF0ZWRfYXQ9IiV2IiBXSEVSRSBpZD0ldmAsIHRhYmxlLCB1cGRhdGVkX2J5LCB1cGRhdGVkX2F0LCBpZCkKfQoKZnVuYyBVcGRhdGVUaWNrZXIodXBkYXRlZF9hdCBzdHJpbmcsIHRhYmxlIHN0cmluZykgc3RyaW5nIHsKICAgIHJldHVybiBmbXQuU3ByaW50ZihgU0VMRUNUICogRlJPTSAldiBXSEVSRSB1cGRhdGVkX2F0ID4gIiV2ImAsIHRhYmxlLCB1cGRhdGVkX2F0KQp9"
 )
 
 func MkdirAll(p string) (err error) {
@@ -100,6 +100,33 @@ func ExportStructFormatFile(pkgName, importHead, tagName, fileType, fileName str
 
 	var element string
 	var command string
+	idType := ""
+	updatedType := ""
+	for i := range data { 
+		if idType != "" && updatedType != "" {
+			break
+		}
+		fieldsLen := len(data[i].Fields)
+		element := data[i]
+		for v := 0; v < fieldsLen; v++ {
+			dataType := ""
+			switch element.Fields[v].DataType {
+			case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+				dataType = "int"
+			case "BIGINT":
+				dataType = "int64"
+			default:
+				dataType = "string"
+			}
+			if element.Fields[v].Name == "id" {
+				idType = dataType
+			}
+			if element.Fields[v].Name == "updated_by" {
+				updatedType = dataType
+			}
+		}
+	}
+	temp := strings.Replace(string(funcFormat), "idType", idType, -1)
 	for i, _ := range data {
 		if data[i].Name == "" {
 			continue
@@ -111,7 +138,7 @@ func ExportStructFormatFile(pkgName, importHead, tagName, fileType, fileName str
 	element = "package " + pkgName + "\n\n"
 	element += importHead + "\n\n" 
 	element += "const (\n\t" + strings.Join(tables, "\n\t") + "\n)" + "\n\n"
-	element += strings.Replace(string(funcFormat), "fileType", fileType, -1) + "\n\n"
+	element += strings.Replace(temp, "updatedType", updatedType, -1) + "\n\n"
 	element += string(fieldFormat) + command
 
 	return WriteFile(element, fileName)

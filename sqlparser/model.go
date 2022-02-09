@@ -45,7 +45,6 @@ func (m *MetadataTable)ToCreateModelFuncFormat(funcPrefix, structPrefix string) 
 			dataType = "string"
 		}
 		switch m.Fields[i].Name {
-		case "id":
 		case "status", "deleted":
 			elements = append(elements, fmt.Sprintf("\t\t%v: 0,", m.Fields[i].ToUpperCase()))
 		case "created_by", "updated_by":
