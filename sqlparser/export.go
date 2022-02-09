@@ -65,7 +65,18 @@ func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fiel
 
 func ExportStoreFormatFile(pkgName, importHead, mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc,  selectPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToStoreFormat(mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName)
+	typeField := ""
+	if len(data.Fields) > 0 {
+		switch data.Fields[0].DataType {
+		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+			typeField = "int"
+		case "BIGINT":
+			typeField = "int64"
+		default:
+			typeField = "string"
+		}
+	}
+	element += data.ToStoreFormat(mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, typeField, tableName)
 
 	return WriteFile(element, fileName)
 }

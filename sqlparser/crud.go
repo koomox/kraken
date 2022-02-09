@@ -111,7 +111,7 @@ func (m *MetadataTable) toParserFormat(valuesField, structPrefix, funcName strin
 func (m *MetadataTable)ToSelectFuncFormat(funcName string) (b string) {
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name != "id" && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+		if i != 0 && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
 		b += "\n\n"
@@ -143,7 +143,7 @@ func (m *MetadataTable)ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix
 	structName := structPrefix + toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name != "id" && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+		if i != 0 && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
 		subFunc := subPrefix + toFieldUpperFormat(m.Fields[i].Name)
