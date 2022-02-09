@@ -13,7 +13,7 @@ const (
 	selectFormat   = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlLCB0YWJsZSBzdHJpbmcpIHN0cmluZyB7CglyZXR1cm4gZm10LlNwcmludGYoYFNFTEVDVCAqIEZST00gJXYgV0hFUkUgZmllbGROYW1lPXZhbHVlRmllbGRgLCB0YWJsZSwgZmllbGROYW1lKQp9"
 	insertCrudFormat = "ZnVuYyBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKCXJldHVybiBteXNxbC5FeGVjKGluc2VydChlbGVtZW50LCB0YWJsZU5hbWUpKQp9"
 	selectCrudFormat = "ZnVuYyBmdW5jTmFtZSgpIHN0cnVjdE5hbWUgewoJcmV0dXJuIHF1ZXJ5KHN1YkZ1bmModGFibGVOYW1lKSkKfQ"
-	updateCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZywgaWQgaW50KSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKHN1YkZ1bmMoY29tbWFuZCwgaWQsIHRhYmxlTmFtZSkpCn0"
+	updateCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZywgaWQgZmllbGRUeXBlKSAoc3FsLlJlc3VsdCwgZXJyb3IpIHsKICAgIHJldHVybiBteXNxbC5FeGVjKHN1YkZ1bmMoY29tbWFuZCwgaWQsIHRhYmxlTmFtZSkpCn0"
 	removeCrudFormat = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CiAgICByZXR1cm4gbXlzcWwuRXhlYyhzdWJGdW5jKHZhbHVlc0ZpZWxkLCB0YWJsZU5hbWUpKQp9"
 	whereCrudFormat = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgc3RydWN0TmFtZSB7CglyZXR1cm4gcXVlcnkoc3ViRnVuYyhjb21tYW5kLCB0YWJsZU5hbWUpKQp9"
 	publicSubFormat = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBbXSpzdHJ1Y3ROYW1lIHsKCXJldHVybiBxdWVyeShzdWJGdW5jKGZpZWxkTmFtZSwgdGFibGVOYW1lKSkKfQ"
@@ -67,9 +67,6 @@ func (m *MetadataTable) toInsertFormat(structPrefix, funcName string) (b string)
 	elementPrefix := "element."
 
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name == "id" {
-			continue
-		}
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "FLOAT", "DOUBLE":
 			values = append(values, "%v")
@@ -210,16 +207,32 @@ func (m *MetadataTable)ToRemoveCrudFormat(funcName, structPrefix, tableName stri
 	return toRemoveCrudFormat(funcName, strings.Join(params, ", "), subFunc, strings.Join(values, ", "), tableName)
 }
 
-func toUpdateCrudFormat(funcName, subFunc, tableName string) (b string) {
+func toUpdateCrudFormat(funcName, subFunc, fieldType, tableName string) (b string) {
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateCrudFormat)
 	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
 	b = strings.Replace(b, "subFunc", subFunc, -1)
+	b = strings.Replace(b, "fieldType", fieldType, -1)
 	return strings.Replace(b, "tableName", tableName, -1)
 }
 
 func (m *MetadataTable)ToUpdateCrudFormat(funcName, structPrefix, tableName string)(b string) {
 	subFunc := structPrefix + funcName
-	return toUpdateCrudFormat(funcName, subFunc, tableName)
+	fieldsLen := len(m.Fields)
+	fieldType := ""
+	for i := 0; i < fieldsLen; i++ {
+		if m.Fields[i].Name == "id" {
+			switch m.Fields[i].DataType {
+			case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+				fieldType = "int"
+			case "BIGINT":
+				fieldType = "int64"
+			default:
+				fieldType = "string"
+			}
+			break
+		}
+	}
+	return toUpdateCrudFormat(funcName, subFunc, fieldType, tableName)
 }
 
 func toSelectCrudFormat(funcName, subFunc, structName, tableName string) (b string) {

@@ -92,7 +92,7 @@ func (m *MetadataTable)ToCompareModelFuncFormat(funcPrefix, structPrefix string)
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
-		case "id", "username", "uid", "created_by", "updated_by", "created_at", "updated_at":
+		case "id", "username", "created_by", "updated_by", "created_at", "updated_at":
 			continue
 		}
 		switch m.Fields[i].DataType {
