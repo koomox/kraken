@@ -54,8 +54,13 @@ func (m *MetadataTable)ToCreateModelFuncFormat(funcPrefix, structPrefix string) 
 			createdAt = dataType
 			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_at"))
 		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, dataType))
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
+			if m.Fields[i].Name == m.Name {
+				params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name + "s", dataType))
+				elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name + "s"))
+			} else {
+				params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, dataType))
+				elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
+			}
 		}
 	}
 	if createdBy != "" {
