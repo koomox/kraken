@@ -189,9 +189,11 @@ func (m *MetadataTable)ToRemoveCrudFormat(funcName, structPrefix, tableName stri
 	var values []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
-		case "id", "updated_by", "updated_at":
+		case "updated_by", "updated_at":
 		default:
-			continue
+			if i != 0 {
+				continue
+			}
 		}
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
@@ -217,21 +219,17 @@ func toUpdateCrudFormat(funcName, subFunc, fieldType, tableName string) (b strin
 
 func (m *MetadataTable)ToUpdateCrudFormat(funcName, structPrefix, tableName string)(b string) {
 	subFunc := structPrefix + funcName
-	fieldsLen := len(m.Fields)
 	fieldType := ""
-	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].Name == "id" {
-			switch m.Fields[i].DataType {
-			case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-				fieldType = "int"
-			case "BIGINT":
-				fieldType = "int64"
-			default:
-				fieldType = "string"
-			}
-			break
-		}
+
+	switch m.Fields[0].DataType {
+	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		fieldType = "int"
+	case "BIGINT":
+		fieldType = "int64"
+	default:
+		fieldType = "string"
 	}
+
 	return toUpdateCrudFormat(funcName, subFunc, fieldType, tableName)
 }
 
