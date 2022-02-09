@@ -33,7 +33,9 @@ func ToFrontendColumnsFormat(v interface{}, columnsName, tagName, labelName stri
 		element := ref.Type().Field(i)
 		switch toLowerCase(element.Name) {
 		case "id", "uid", "username":
-			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "false", "true", "false", "false", "true"))
+			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "false", "false", "true", "false", "true"))
+		case "password":
+			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "true", "false", "true", "false", "false"))
 		case "status", "deleted", "created_by", "updated_by", "created_at", "updated_at":
 			elements = append(elements, toLabelFormat(element.Tag.Get(labelName), element.Tag.Get(tagName), "true", "true", "false", "false", "true"))
 		default:
