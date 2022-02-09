@@ -134,9 +134,11 @@ func (m *MetadataTable)ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (b
 	var param string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
-		case "id", "updated_by", "updated_at":
+		case "updated_by", "updated_at":
 		default:
-			continue
+			if i != 0 {
+				continue
+			}
 		}
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
@@ -162,7 +164,7 @@ func (m *MetadataTable)ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (b
 		param = strings.Join(params, ", ") + ", command string"
 	}
  
-	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), "command, id")
+	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), fmt.Sprintf("command, %v", m.Fields[0].Name))
 }
 
 func toRemoveModelFuncFormat(funcName, paramsField, subFunc, valuesField string) (b string) {
@@ -181,9 +183,11 @@ func (m *MetadataTable)ToRemoveModelFuncFormat(funcPrefix, removeFunc string)(b 
 	var values []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
-		case "id", "updated_by", "updated_at":
+		case "updated_by", "updated_at":
 		default:
-			continue
+			if i != 0 {
+				continue
+			}
 		}
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
