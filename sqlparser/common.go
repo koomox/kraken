@@ -69,32 +69,70 @@ type MetadataTable struct {
 }
 
 type Field struct {
-	Name     string
-	DataType string
-	Unique   bool
+	Name         string
+	DataType     string
+	Unique       bool
+	PrimaryKey   bool
+	AutoIncrment bool
 }
 
-func (f *MetadataTable)ToUpperCase() string {
+func (f *MetadataTable) Keys() (elements []string) {
+	for i := range f.Fields {
+		elements = append(elements, f.Fields[i].Name)
+	}
+	return
+}
+
+func (f *MetadataTable) SetPrimaryKey(s string) {
+	for i := range f.Fields {
+		if strings.EqualFold(f.Fields[i].Name, s) {
+			f.Fields[i].PrimaryKey = true
+			break
+		}
+	}
+}
+
+func (f *MetadataTable) PrimaryKey() *Field {
+	for i := range f.Fields {
+		if f.Fields[i].PrimaryKey {
+			return &f.Fields[i]
+		}
+	}
+	return nil
+}
+
+func (f *Field) TypeOf() string {
+	switch f.DataType {
+	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		return "int"
+	case "BIGINT":
+		return "int64"
+	default:
+		return "string"
+	}
+}
+
+func (f *MetadataTable) ToUpperCase() string {
 	return toFieldUpperFormat(f.Name)
 }
 
-func (f *MetadataTable)ToLowerCase() string {
+func (f *MetadataTable) ToLowerCase() string {
 	return toFieldLowerFormat(f.Name)
 }
 
-func (f *MetadataTable)ToLowerCamelCase() string {
+func (f *MetadataTable) ToLowerCamelCase() string {
 	return toLowerCamelFormat(f.Name)
 }
 
-func (f *Field)ToUpperCase() string {
+func (f *Field) ToUpperCase() string {
 	return toFieldUpperFormat(f.Name)
 }
 
-func (f *Field)ToLowerCase() string {
+func (f *Field) ToLowerCase() string {
 	return toFieldLowerFormat(f.Name)
 }
 
-func (f *Field)ToLowerCamelCase() string {
+func (f *Field) ToLowerCamelCase() string {
 	return toLowerCamelFormat(f.Name)
 }
 

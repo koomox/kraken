@@ -20,10 +20,8 @@ func readFile(readCallbackFunc func(string), name string) (err error) {
 		if err != nil && err != io.EOF {
 			return err
 		}
-		line = strings.Replace(line, "`", "", -1)
 		line = strings.Replace(line, "\r", "", -1)
 		line = strings.Replace(line, "\n", "", -1)
-		line = strings.Replace(line, ",", "", -1)
 		line = strings.TrimSpace(line)
 		readCallbackFunc(line)
 		if err == io.EOF {

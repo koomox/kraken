@@ -7,8 +7,8 @@ import (
 
 const (
 	columnsFieldFormat = "Y29uc3QgY29sdW1uc0ZpZWxkID0gWwpjb250ZW50RmllbGQKXTs"
-	labelFieldFormat = "ICB7CiAgICBsYWJlbDogJ2xhYmVsRmllbGQnLAogICAgZmllbGQ6ICdmaWVsZE5hbWUnLAogICAgcmVuZGVyVHlwZTogJ0lucHV0JywKICAgIGhpZGRlbjogaGlkZGVuRmllbGQsCiAgICB2aXNpYmxlOiB2aXNpYmxlRmllbGQsCiAgICB3cml0YWJsZTogd3JpdGFibGVGaWVsZCwKICAgIHVwZGF0ZVdyaXRhYmxlOiB1cGRhdGVXcml0YWJsZUZpZWxkLAogICAgdXBkYXRlVmlzaWJsZTogdXBkYXRlVmlzaWJsZUZpZWxkLAogIH0s"
-	parseFuncFormat = "ZnVuYyBmdW5jTmFtZShtIG1hcFtzdHJpbmddaW50ZXJmYWNle30pIChlbGVtZW50ICpzdHJ1Y3ROYW1lKSB7CgllbGVtZW50ID0gJnN0cnVjdE5hbWV7fQoJZm9yIGssIHYgOj0gcmFuZ2UgbSB7CgkJdmFsIDo9IHN0cmluZ3MuVHJpbVNwYWNlKGZtdC5TcHJpbnRmKCIldiIsIHYpKQoJCXN3aXRjaCBrIHsKY29udGVudEZpZWxkCgkJfQoJfQoKCXJldHVybgp9"
+	labelFieldFormat   = "ICB7CiAgICBsYWJlbDogJ2xhYmVsRmllbGQnLAogICAgZmllbGQ6ICdmaWVsZE5hbWUnLAogICAgcmVuZGVyVHlwZTogJ0lucHV0JywKICAgIGhpZGRlbjogaGlkZGVuRmllbGQsCiAgICB2aXNpYmxlOiB2aXNpYmxlRmllbGQsCiAgICB3cml0YWJsZTogd3JpdGFibGVGaWVsZCwKICAgIHVwZGF0ZVdyaXRhYmxlOiB1cGRhdGVXcml0YWJsZUZpZWxkLAogICAgdXBkYXRlVmlzaWJsZTogdXBkYXRlVmlzaWJsZUZpZWxkLAogIH0s"
+	parseFuncFormat    = "ZnVuYyBmdW5jTmFtZShtIG1hcFtzdHJpbmddaW50ZXJmYWNle30pIChlbGVtZW50ICpzdHJ1Y3ROYW1lKSB7CgllbGVtZW50ID0gJnN0cnVjdE5hbWV7fQoJZm9yIGssIHYgOj0gcmFuZ2UgbSB7CgkJdmFsIDo9IHN0cmluZ3MuVHJpbVNwYWNlKGZtdC5TcHJpbnRmKCIldiIsIHYpKQoJCXN3aXRjaCBrIHsKY29udGVudEZpZWxkCgkJfQoJfQoKCXJldHVybgp9"
 	parseSubFuncFormat = "CQljYXNlICJuYW1lRmllbGQiOgoJCQllbGVtZW50LmZpZWxkTmFtZSA9IHZhbHVlRmllbGQ"
 )
 
@@ -29,7 +29,7 @@ func toColumnsFormat(columnsField, contentField string) (b string) {
 	return strings.Replace(b, "contentField", contentField, -1)
 }
 
-func (m *MetadataTable)ToFrontendColumnsFormat(columnsName string)(b string) {
+func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) (b string) {
 	fieldsLen := len(m.Fields)
 	if columnsName == "" {
 		columnsName = m.ToUpperCase()
@@ -65,18 +65,18 @@ func toParseSubFuncFormat(nameField, fieldName, valueField string) (b string) {
 	return strings.Replace(b, "valueField", valueField, -1)
 }
 
-func (m *MetadataTable)ToForntendParseFormat(funcPrefix string) (b string) {
+func (m *MetadataTable) ToForntendParseFormat(funcPrefix string) (b string) {
 	fieldsLen := len(m.Fields)
 	funcName := funcPrefix + m.ToUpperCase()
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
+			elements = append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
 		case "BIGINT":
-			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
+			elements = append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
 		default:
-			elements =  append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "val"))
+			elements = append(elements, toParseSubFuncFormat(m.Fields[i].Name, m.Fields[i].ToUpperCase(), "val"))
 		}
 	}
 

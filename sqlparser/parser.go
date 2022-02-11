@@ -5,12 +5,17 @@ import (
 )
 
 func findField(s string) (element Field) {
-	b := strings.Split(s, " ")
+	b := Split(s, " ")
 	for i := 0; i < len(b); i++ {
 		if b[i] == "" {
 			continue
 		}
 		if element.Name != "" && strings.EqualFold(b[i], "UNIQUE") {
+			element.Unique = true
+		}
+		if element.Name != "" && strings.EqualFold(b[i], "AUTO_INCREMENT") {
+			element.AutoIncrment = true
+			element.PrimaryKey = true
 			element.Unique = true
 		}
 		if findKeywordString(b[i]) != "" {
@@ -27,50 +32,99 @@ func findField(s string) (element Field) {
 	return
 }
 
-func matchTableName(s, sub string) (elements []string) {
-	b := strings.Split(s, " ")
-	for i := 0; i < len(b); i++ {
-		if b[i] == "" || b[i] == sub {
-			continue
+func matchTableName(s string) string {
+	var ch []byte
+	isValid := false
+	for i := range s {
+		switch s[i] {
+		case '.':
+			isValid = true
+		default:
+			if isValid {
+				ch = append(ch, s[i])
+			}
 		}
-		if findKeywordString(b[i]) != "" {
-			continue
-		}
-		elements = append(elements, b[i])
 	}
-	return
+	return string(ch)
 }
 
-func findTableName(s, sub string) (element string) {
-	elements := matchTableName(s, sub)
-	element = strings.Join(elements, " ")
-	element = strings.TrimSpace(element)
-	if strings.Contains(element, ".") {
-		elements = strings.Split(element, ".")
-		element = elements[1]
+func findTableName(s string) string {
+	options := Split(s, " ")
+	for i := range options {
+		v := options[i]
+		if findKeywordString(v) == "" && strings.Contains(v, ".") {
+			return matchTableName(v)
+		}
+	}
+
+	return ""
+}
+
+func findPrimaryKey(s string) string {
+	options := Split(s, " ")
+	for i := range options {
+		v := options[i]
+		if findKeywordString(v) == "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func Trim(s string) string {
+	var ch []byte
+	for i := range s {
+		switch s[i] {
+		case ',', '(', ')', '`', '"':
+		default:
+			ch = append(ch, s[i])
+		}
+	}
+	return string(ch)
+}
+
+func Split(s, sep string) (elements []string) {
+	r := strings.Split(s, sep)
+	for i := range r {
+		v := Trim(r[i])
+		if v == "" {
+			continue
+		}
+		elements = append(elements, v)
 	}
 	return
 }
 
 func FromFile(filename string) (elements []MetadataTable) {
 	element := &MetadataTable{}
+	counter := 0
 	readFile(func(s string) {
-		if s == "" || strings.HasPrefix(s, "--") || strings.HasPrefix(s, "CREATE DATABASE") {
+		if s == "" || strings.HasPrefix(s, "--") {
 			return
 		}
-		lines := strings.Split(s, " ")
-		switch lines[0] {
-		case "DESC", "USE", "SELECT", "INSERT", "GRANT", "PRIMARY", "UNIQUE", "DROP":
+		options := Split(s, " ")
+		v := findKeywordString(options[0])
+		switch v {
+		case "PRIMARY":
+			if strings.HasPrefix(s, "PRIMARY KEY") {
+				element.SetPrimaryKey(findPrimaryKey(s))
+			}
+			return
+		case "CREATE":
+			if strings.HasPrefix(s, "CREATE TABLE") && strings.HasSuffix(s, "(") {
+				counter++
+				element = &MetadataTable{Name: findTableName(s)}
+			}
 			return
 		default:
+			if strings.HasPrefix(s, ")") && counter > 0 {
+				counter--
+				elements = append(elements, *element)
+				element = &MetadataTable{}
+				return
+			}
 		}
-		if strings.HasPrefix(s, ")") {
-			elements = append(elements, *element)
-			element = &MetadataTable{}
-			return
-		}
-		if strings.HasSuffix(s, "(") {
-			element = &MetadataTable{Name: findTableName(s, "(")}
+		if v != "" {
 			return
 		}
 		element.Fields = append(element.Fields, findField(s))
