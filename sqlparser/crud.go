@@ -114,9 +114,6 @@ func (m *MetadataTable) toParserFormat(valuesField, structPrefix, funcName strin
 func (m *MetadataTable) ToSelectFuncFormat(funcName string) (b string) {
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
-			continue
-		}
 		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
 			continue
 		}
@@ -149,10 +146,7 @@ func (m *MetadataTable) ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefi
 	structName := structPrefix + toFieldUpperFormat(m.Name)
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
-			continue
-		}
-		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+		if !m.Fields[i].Unique && m.Fields[i].Name != "created_by" {
 			continue
 		}
 		subFunc := subPrefix + toFieldUpperFormat(m.Fields[i].Name)
@@ -200,18 +194,11 @@ func (m *MetadataTable) ToRemoveCrudFormat(funcName, structPrefix, tableName str
 		switch m.Fields[i].Name {
 		case "updated_by", "updated_at":
 		default:
-			if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+			if !m.Fields[i].PrimaryKey {
 				continue
 			}
 		}
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
-		case "BIGINT":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
-		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
-		}
+		params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
 		values = append(values, m.Fields[i].Name)
 	}
 
