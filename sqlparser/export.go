@@ -128,17 +128,17 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 	values += string(fieldFormat) +"\n"
 	// select func
 	values += "\nfunc Select(table string) string {\n"
-	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v, table)\n", "`", "%v`")
+	values += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %v`, table)\n", "%v")
 	values += "}\n"
 
 	// where func
 	values += "\nfunc Where(command string, table string) string {\n"
-	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v WHERE %v, table, command)\n", "`", `%v`, "%v`")
+	values += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %v WHERE %v`, table, command)\n", `%v`, "%v")
 	values += "}\n"
 
 	// update func
 	values += "\nfunc UpdateTicker(updated_at string, table string) string {\n"
-	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v WHERE updated_at > %v%v, table, updated_at)\n", "`", `%v`, `"%v"`, "`")
+	values += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > %v`, table, updated_at)\n", `%v`, `"%v"`)
 	values += "}\n"
 
 	for i := range data {
