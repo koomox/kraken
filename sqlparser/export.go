@@ -149,19 +149,16 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 	return WriteFile(values, fileName)
 }
 
-func ExportStructCompareFormatFile(pkgName, funcName, fileName string, data []MetadataTable) error {
-	var element string
-	for i, _ := range data {
+func ExportStructCompareFormatFile(pkgName, src, dst, funcName, fileName string, data []MetadataTable) error {
+	values := fmt.Sprintf("package %v\n\n", pkgName)
+	for i := range data {
 		if data[i].Name == "" {
 			continue
 		}
-		element += "\n\n"
-		element += data[i].ToStructCompareFormat(funcName)
+		values += data[i].ToStructCompareFormat(src, dst, funcName) +"\n\n"
 	}
 
-	element = "package " + pkgName + element
-
-	return WriteFile(element, fileName)
+	return WriteFile(values, fileName)
 }
 
 func ExportFile(filename, tagField string, data []MetadataTable) error {

@@ -1,37 +1,18 @@
 package sqlparser
 
 import (
-	"encoding/base64"
-	"strings"
+	"fmt"
 )
 
-const (
-	compareFormat    = "ZnVuYyAobyAqc3RydWN0TmFtZSkgZnVuY05hbWUoZWxlbWVudCAqc3RydWN0TmFtZSkgYm9vbCB7CmNvbnRlbnRGaWVsZAoJcmV0dXJuIHRydWUKfQ"
-	compareSubFormat = "CWlmIG8uZmllbGROYW1lICE9IGVsZW1lbnQuZmllbGROYW1lIHsKCQlyZXR1cm4gZmFsc2UKCX0"
-)
-
-func (m *MetadataTable) ToStructCompareFormat(funcName string) string {
-	return m.toStructCompare(funcName)
+func (m *MetadataTable) ToStructCompareFormat(src, dst, funcName string) string {
+	return m.toStructCompare(src, dst, funcName)
 }
 
-func toStructCompare(contentField, structName, funcName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "contentField", contentField, -1)
-	return
-}
-
-func (m *MetadataTable) toStructCompare(funcName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareSubFormat)
-	structName := toFieldUpperFormat(m.Name)
-	fieldsLen := len(m.Fields)
-	var elements []string
-	for i := 0; i < fieldsLen; i++ {
-		element := strings.Replace(string(fieldFormat), "fieldName", toFieldUpperFormat(m.Fields[i].Name), -1)
-		elements = append(elements, element)
+func (m *MetadataTable) toStructCompare(src, dst, funcName string) (b string) {
+	b = fmt.Sprintf("func (%v *%v) %v(%v *%v) bool {\n", src, m.ToUpperCase(), funcName, dst, m.ToUpperCase())
+	for i := range m.Fields {
+		b += fmt.Sprintf("\tif %v.%v != %v.%v {\n\t\treturn false\n\t}\n", src, m.Fields[i].ToUpperCase(), dst, m.Fields[i].ToUpperCase())
 	}
-
-	contentField := strings.Join(elements, "\n")
-	return toStructCompare(contentField, structName, funcName)
+	b += "\treturn true\n}\n"
+	return
 }
