@@ -5,10 +5,10 @@ import (
 	"unicode"
 )
 
-func ImportFormatString(args ...string) string {
+func toImportFormat(args ...string) string {
 	values := "import(\n"
 	for i := range args {
-		values += fmt.Sprintf("\t%v\n", args[i])
+		values += fmt.Sprintf("\t%v%v%v\n", `"`, args[i], `"`)
 	}
 	values += ")\n"
 	return values

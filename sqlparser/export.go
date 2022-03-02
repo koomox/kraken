@@ -114,11 +114,7 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 	tableSuffix := "Table"
 	importField := []string{"strconv", "fmt"}
 	values := fmt.Sprintf("package %v\n\n", pkgName)
-	values += "import (\n"
-	for i := range importField {
-		values += fmt.Sprintf("\t%v%v%v\n", `"`, importField[i], `"`)
-	}
-	values += ")\n\n"
+	values += toImportFormat(importField...) + "\n"
 	values += "const (\n"
 	for i := range data {
 		values += fmt.Sprintf("\t%v%v=%v%v%v\n", data[i].ToUpperCase(), tableSuffix, `"`, data[i].Name, `"`)
