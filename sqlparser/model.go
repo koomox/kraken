@@ -35,11 +35,11 @@ func (m *MetadataTable) ToCreateModelFuncFormat(funcPrefix, structPrefix string)
 	createdBy := ""
 	createdAt := ""
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+		if m.Fields[i].AutoIncrment {
 			continue
 		}
 		switch m.Fields[i].Name {
-		case "status", "deleted":
+		case "deleted":
 			elements = append(elements, fmt.Sprintf("\t\t%v: 0,", m.Fields[i].ToUpperCase()))
 		case "created_by", "updated_by":
 			createdBy = m.Fields[i].TypeOf()
@@ -129,15 +129,12 @@ func toUpdateModelSubFuncFormat(fieldName, fieldType string) (b string) {
 }
 
 func (m *MetadataTable) ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (b string) {
-	keyName := ""
-	if v := m.PrimaryKey(); v != nil {
-		keyName = v.Name
-	}
 	funcName := funcPrefix + m.ToUpperCase()
 	fieldsLen := len(m.Fields)
 	var params []string
 	var elements []string
 	var param string
+	var keys []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
 		case "updated_by", "updated_at":
@@ -145,7 +142,9 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (
 			if !m.Fields[i].PrimaryKey {
 				continue
 			}
+			keys = append(keys, m.Fields[i].Name)
 		}
+
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
@@ -164,7 +163,7 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (
 		param = strings.Join(params, ", ") + ", command string"
 	}
 
-	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), fmt.Sprintf("command, %v", keyName))
+	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), fmt.Sprintf("command, %v", strings.Join(keys, ", ")))
 }
 
 func toRemoveModelFuncFormat(funcName, paramsField, subFunc, valuesField string) (b string) {
@@ -214,13 +213,9 @@ func toSelectModelFuncFormat(funcName, fieldName, fieldType, resultField, struct
 }
 
 func (m *MetadataTable) ToSelectModelFuncFormat(funcPrefix, structPrefix string) (b string) {
-	fieldsLen := len(m.Fields)
 	var elements []string
-	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
-			continue
-		}
-		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+	for i := range m.Fields {
+		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique && !m.Fields[i].PrimaryKey {
 			continue
 		}
 		funcName := "From" + m.ToUpperCase() + funcPrefix + m.Fields[i].ToUpperCase()

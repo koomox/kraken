@@ -101,6 +101,15 @@ func (f *MetadataTable) PrimaryKey() *Field {
 	return nil
 }
 
+func (f *MetadataTable) PrimaryKeyLen() (n int) {
+	for i := range f.Fields {
+		if f.Fields[i].PrimaryKey {
+			n++
+		}
+	}
+	return
+}
+
 func (f *Field) TypeOf() string {
 	switch f.DataType {
 	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
@@ -109,6 +118,17 @@ func (f *Field) TypeOf() string {
 		return "int64"
 	default:
 		return "string"
+	}
+}
+
+func (f *Field) ValueOf() string {
+	switch f.DataType {
+	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		return "%v"
+	case "BIGINT":
+		return "%v"
+	default:
+		return `"%v"`
 	}
 }
 

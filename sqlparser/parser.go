@@ -15,8 +15,6 @@ func findField(s string) (element Field) {
 		}
 		if element.Name != "" && strings.EqualFold(b[i], "AUTO_INCREMENT") {
 			element.AutoIncrment = true
-			element.PrimaryKey = true
-			element.Unique = true
 		}
 		if findKeywordString(b[i]) != "" {
 			continue
@@ -60,15 +58,15 @@ func findTableName(s string) string {
 	return ""
 }
 
-func findPrimaryKey(s string) string {
+func findPrimaryKey(s string) (elements []string) {
 	options := Split(s, " ")
 	for i := range options {
 		v := options[i]
 		if findKeywordString(v) == "" {
-			return v
+			elements = append(elements, v)
 		}
 	}
-	return ""
+	return
 }
 
 func Trim(s string) string {
@@ -107,7 +105,11 @@ func FromFile(filename string) (elements []MetadataTable) {
 		switch v {
 		case "PRIMARY":
 			if strings.HasPrefix(s, "PRIMARY KEY") {
-				element.SetPrimaryKey(findPrimaryKey(s))
+				if keys := findPrimaryKey(strings.TrimPrefix(s, "PRIMARY KEY")); keys != nil && len(keys) > 0 {
+					for i := range keys {
+						element.SetPrimaryKey(keys[i])
+					}
+				}
 			}
 			return
 		case "CREATE":

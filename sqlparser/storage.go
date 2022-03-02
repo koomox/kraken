@@ -37,6 +37,9 @@ func toStructStorageFormat(structName, structField string) (b string) {
 func ToStructStorageFormat(structName, fieldSuffix string, data []MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
+		if data[i].PrimaryKeyLen() != 1 {
+			continue
+		}
 		elements = append(elements, "\t"+fmt.Sprintf(`%v *%v%v`, data[i].ToUpperCase(), data[i].ToLowerCase(), fieldSuffix))
 	}
 	return toStructStorageFormat(structName, strings.Join(elements, "\n"))
@@ -52,6 +55,9 @@ func toNewStorageFuncFormat(funcName, structName, contentField string) (b string
 func ToNewStorageFuncFormat(funcName, newFunc, structName string, data []MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
+		if data[i].PrimaryKeyLen() != 1 {
+			continue
+		}
 		elements = append(elements, fmt.Sprintf("\t\t%v:%v.%v(bucket.NewStore()),", data[i].ToUpperCase(), data[i].ToLowerCase(), newFunc))
 	}
 	return toNewStorageFuncFormat(funcName, structName, strings.Join(elements, "\n"))
@@ -67,6 +73,9 @@ func toUpdateStorageFuncFormat(funcName, structName, contentField string) (b str
 func ToUpdateStorageFuncFormat(funcName, structName string, data []MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
+		if data[i].PrimaryKeyLen() != 1 {
+			continue
+		}
 		elements = append(elements, fmt.Sprintf("\tstore.%v.%v(datetime)", data[i].ToUpperCase(), funcName))
 	}
 	return toUpdateStorageFuncFormat(funcName, structName, strings.Join(elements, "\n"))
@@ -92,7 +101,7 @@ func (m *MetadataTable) ToSelectStorageFuncFormat(selectPrefix, structPrefix str
 	fieldsLen := len(m.Fields)
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
-		if !m.Fields[i].PrimaryKey && m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+		if !m.Fields[i].PrimaryKey && !m.Fields[i].Unique {
 			continue
 		}
 		subFunc := selectPrefix + m.Fields[i].ToUpperCase()
@@ -105,9 +114,6 @@ func (m *MetadataTable) ToSelectStorageFuncFormat(selectPrefix, structPrefix str
 			fieldType = "int64"
 		default:
 			fieldType = "string"
-		}
-		if m.Fields[i].Name == "created_by" {
-			structName = "[]" + structName
 		}
 		elements = append(elements, toSelectStorageFuncFormat(subFunc, m.ToUpperCase(), m.Fields[i].Name, fieldType, funcName, structName))
 	}

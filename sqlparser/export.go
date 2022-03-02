@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const (
@@ -49,6 +48,9 @@ func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFu
 }
 
 func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix, fileName string, data MetadataTable) error {
+	if data.PrimaryKeyLen() != 1 {
+		return nil
+	}
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToSelectStorageFuncFormat(selectPrefix, structPrefix)
 	return WriteFile(element, fileName)
@@ -64,6 +66,9 @@ func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fiel
 }
 
 func ExportStoreFormatFile(pkgName, importHead, mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+	if data.PrimaryKeyLen() != 1 {
+		return nil
+	}
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	typeField := ""
 	if len(data.Fields) > 0 {
@@ -85,8 +90,8 @@ func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, upd
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertCrudFormat(insertFunc, structPrefix, tableName) + "\n\n"
 	element += data.ToSelectCrudFormat(selectFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToUpdateCrudFormat(updateFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToRemoveCrudFormat(removeFunc, structPrefix, tableName) + "\n\n"
+	element += data.ToUpdateCrudFormat(updateFunc, "update", tableName) + "\n\n"
+	element += data.ToRemoveCrudFormat(removeFunc, "remove", tableName) + "\n\n"
 	element += data.ToWhereCrudFormat(whereFunc, structPrefix, tableName)
 	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
 
@@ -96,63 +101,52 @@ func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, upd
 func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, selectName, fileName string, data MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
+	element += data.ToUpdateFormat("update") + "\n\n"
+	element += data.ToRemoveFormat("remove") + "\n\n"
 	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
 	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
-	element += data.ToSelectFuncFormat(selectName)
+	element += data.ToSelectFuncFormat("by")
 
 	return WriteFile(element, fileName)
 }
 
-func ExportStructFormatFile(pkgName, importHead, tagName, fileType, fileName string, data []MetadataTable) error {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parsetIntFuncFormat)
-	funcFormat, _ := base64.RawStdEncoding.DecodeString(structFuncFormat)
+func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTable) error {
 	tableSuffix := "Table"
-	var tables []string
-
-	var element string
-	var command string
-	idType := ""
-	updatedType := ""
+	importField := []string{"strconv", "fmt"}
+	values := fmt.Sprintf("package %v\n\n", pkgName)
+	values += "import (\n"
+	for i := range importField {
+		values += fmt.Sprintf("\t%v%v%v\n", `"`, importField[i], `"`)
+	}
+	values += ")\n\n"
+	values += "const (\n"
 	for i := range data {
-		if idType != "" && updatedType != "" {
-			break
-		}
-		fieldsLen := len(data[i].Fields)
-		element := data[i]
-		for v := 0; v < fieldsLen; v++ {
-			dataType := ""
-			switch element.Fields[v].DataType {
-			case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-				dataType = "int"
-			case "BIGINT":
-				dataType = "int64"
-			default:
-				dataType = "string"
-			}
-			if element.Fields[v].Name == "id" {
-				idType = dataType
-			}
-			if element.Fields[v].Name == "updated_by" {
-				updatedType = dataType
-			}
-		}
+		values += fmt.Sprintf("\t%v%v=%v%v%v\n", data[i].ToUpperCase(), tableSuffix, `"`, data[i].Name, `"`)
 	}
-	temp := strings.Replace(string(funcFormat), "idType", idType, -1)
-	for i, _ := range data {
-		if data[i].Name == "" {
-			continue
-		}
-		tables = append(tables, fmt.Sprintf(`%v="%v"`, data[i].ToUpperCase()+tableSuffix, data[i].Name))
-		command += "\n\n"
-		command += data[i].ToStructFormat(tagName)
-	}
-	element = "package " + pkgName + "\n\n"
-	element += importHead + "\n\n"
-	element += "const (\n\t" + strings.Join(tables, "\n\t") + "\n)" + "\n\n"
-	element += strings.Replace(temp, "updatedType", updatedType, -1) + "\n\n"
-	element += string(fieldFormat) + command
+	values += ")\n\n"
+	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parsetIntFuncFormat)
+	values += string(fieldFormat) +"\n"
+	// select func
+	values += "\nfunc Select(table string) string {\n"
+	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v, table)\n", "`", "%v`")
+	values += "}\n"
 
-	return WriteFile(element, fileName)
+	// where func
+	values += "\nfunc Where(command string, table string) string {\n"
+	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v WHERE %v, table, command)\n", "`", `%v`, "%v`")
+	values += "}\n"
+
+	// update func
+	values += "\nfunc UpdateTicker(updated_at string, table string) string {\n"
+	values += fmt.Sprintf("\treturn fmt.Sprintf(%vSELECT * FROM %v WHERE updated_at > %v%v, table, updated_at)\n", "`", `%v`, `"%v"`, "`")
+	values += "}\n"
+
+	for i := range data {
+		values += "\n"
+		values += data[i].ToStructFormat(tagName)
+	}
+
+	return WriteFile(values, fileName)
 }
 
 func ExportStructCompareFormatFile(pkgName, funcName, fileName string, data []MetadataTable) error {
