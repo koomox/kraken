@@ -72,26 +72,27 @@ func ExportStoreFormatFile(pkgName, importHead, newFunc, mapFunc, selectFunc, up
 	return WriteFile(element, fileName)
 }
 
-func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, whereFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data *MetadataTable) error {
+func ExportPublicCrudFormatFile(pkgName, importHead, InsertFunc, insertFunc, SelectFunc, selectFunc, UpdateFunc, updateFunc, UpdateTickerFunc, RemoveFunc, removeFunc, WhereFunc, ByFunc, byFunc, queryFunc, structName, databasePrefix, tableName, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToInsertCrudFormat(insertFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToSelectCrudFormat(selectFunc, structPrefix, tableName) + "\n\n"
-	element += data.ToUpdateCrudFormat(updateFunc, "update", tableName) + "\n\n"
-	element += data.ToRemoveCrudFormat(removeFunc, "remove", tableName) + "\n\n"
-	element += data.ToWhereCrudFormat(whereFunc, structPrefix, tableName)
-	element += data.ToPublicSubCrudFormat(funcPrefix, subPrefix, structPrefix, tableName)
+	element += data.ToInsertCrudFormat(InsertFunc, insertFunc, "element", structName, tableName) + "\n\n"
+	element += data.ToSelectCrudFormat(SelectFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, SelectFunc), structName, tableName) + "\n\n"
+	element += data.ToUpdateCrudFormat(UpdateFunc, updateFunc, tableName) + "\n\n"
+	element += data.ToUpdateTickerCrudFormat(UpdateTickerFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, UpdateTickerFunc), structName, tableName) + "\n\n"
+	element += data.ToRemoveCrudFormat(RemoveFunc, removeFunc, tableName) + "\n\n"
+	element += data.ToWhereCrudFormat(WhereFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, WhereFunc), structName, tableName) +"\n\n"
+	element += data.ToPublicSubCrudFormat(ByFunc, queryFunc, byFunc, structName, tableName)
 
 	return WriteFile(element, fileName)
 }
 
-func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, selectName, fileName string, data *MetadataTable) error {
+func ExportCrudFormatFile(pkgName, importHead, insertFunc, updateFunc, removeFunc, queryFunc, parserFunc, selectFunc, structPrefix, structName, databasePrefix, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
-	element += data.ToUpdateFormat("update") + "\n\n"
-	element += data.ToRemoveFormat("remove") + "\n\n"
-	element += data.ToQueryFormat(structPrefix, queryName) + "\n\n"
-	element += data.ToParserFormat("element", structPrefix, parserName) + "\n\n"
-	element += data.ToSelectFuncFormat("by")
+	element += data.ToInsertFormat(insertFunc, structPrefix, structName) + "\n\n"
+	element += data.ToUpdateFormat(updateFunc) + "\n\n"
+	element += data.ToRemoveFormat(removeFunc) + "\n\n"
+	element += data.ToQueryFormat(queryFunc, "elements", structName) + "\n\n"
+	element += data.ToParserFormat(parserFunc, structPrefix, structName, databasePrefix) + "\n\n"
+	element += data.ToSelectFuncFormat(selectFunc)
 
 	return WriteFile(element, fileName)
 }
