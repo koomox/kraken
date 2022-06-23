@@ -112,13 +112,15 @@ func (r *Store) ToJSON() ([]byte, error) {
 func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		callbackFunc(it.Value())
+		v := it.Value().(*Element)
+		callbackFunc(v.Payload)
 	}
 }
 
 func (r *Store) CancelFunc(callbackFunc func(interface{})bool) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		callbackFunc(it.Value())
+		v := it.Value().(*Element)
+		callbackFunc(v.Payload)
 	}
 }
