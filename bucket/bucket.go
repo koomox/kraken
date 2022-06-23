@@ -13,17 +13,29 @@ type Store struct {
 }
 
 type Element struct {
-	Key     int
+	Key     interface{}
 	Payload interface{}
 }
 
-func NewStore() *Store {
+func NewWithStringComparator() *Store {
 	return &Store{
-		tree: redblacktree.NewWithIntComparator(),
+		tree: redblacktree.NewWith(redblacktree.StringComparator),
 	}
 }
 
-func (r *Store) Put(key int, payload interface{}) {
+func NewWithIntComparator() *Store {
+	return &Store{
+		tree: redblacktree.NewWith(redblacktree.IntComparator),
+	}
+}
+
+func NewWithInt64Comparator() *Store {
+	return &Store{
+		tree: redblacktree.NewWith(redblacktree.Int64Comparator),
+	}
+}
+
+func (r *Store) Put(key, payload interface{}) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -33,7 +45,7 @@ func (r *Store) Put(key int, payload interface{}) {
 	})
 }
 
-func (r *Store) Get(key int) interface{} {
+func (r *Store) Get(key interface{}) interface{} {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -43,7 +55,7 @@ func (r *Store) Get(key int) interface{} {
 	return nil
 }
 
-func (r *Store) Remove(key int) {
+func (r *Store) Remove(key interface{}) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -86,17 +98,6 @@ func (r *Store) ToJSON() ([]byte, error) {
 func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		callbackFunc(v.Payload)
-	}
-}
-
-func (r *Store) CancelFunc(callbackFunc func(interface{}) bool) {
-	it := r.tree.Iterator()
-	for it.Next() {
-		v := it.Value().(*Element)
-		if callbackFunc(v.Payload) {
-			return
-		}
+		callbackFunc(it.Value())
 	}
 }

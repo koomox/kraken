@@ -58,6 +58,20 @@ func IntComparator(a, b interface{}) int {
 	}
 }
 
+// IntComparator provides a basic comparison on int
+func Int64Comparator(a, b interface{}) int {
+	aAsserted := a.(int64)
+	bAsserted := b.(int64)
+	switch {
+	case aAsserted > bAsserted:
+		return 1
+	case aAsserted < bAsserted:
+		return -1
+	default:
+		return 0
+	}
+}
+
 // Tree holds elements of the red-black tree
 type Tree struct {
 	Root       *Node
@@ -78,16 +92,6 @@ type Node struct {
 // NewWith instantiates a red-black tree with the custom comparator.
 func NewWith(comparator Comparator) *Tree {
 	return &Tree{Comparator: comparator}
-}
-
-// NewWithIntComparator instantiates a red-black tree with the IntComparator, i.e. keys are of type int.
-func NewWithIntComparator() *Tree {
-	return &Tree{Comparator: IntComparator}
-}
-
-// NewWithStringComparator instantiates a red-black tree with the StringComparator, i.e. keys are of type string.
-func NewWithStringComparator() *Tree {
-	return &Tree{Comparator: StringComparator}
 }
 
 // Put inserts node into the tree.

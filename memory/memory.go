@@ -15,17 +15,29 @@ type Store struct {
 
 type Element struct {
 	Expired time.Time
-	Key     string
+	Key     interface{}
 	Payload interface{}
 }
 
-func NewStore() *Store {
+func NewWithStringComparator() *Store {
 	return &Store{
-		tree: redblacktree.NewWithStringComparator(),
+		tree: redblacktree.NewWith(redblacktree.StringComparator),
 	}
 }
 
-func (r *Store) Put(key string, payload interface{}, ttl time.Duration) {
+func NewWithIntComparator() *Store {
+	return &Store{
+		tree: redblacktree.NewWith(redblacktree.IntComparator),
+	}
+}
+
+func NewWithInt64Comparator() *Store {
+	return &Store{
+		tree: redblacktree.NewWith(redblacktree.Int64Comparator),
+	}
+}
+
+func (r *Store) Put(key, payload interface{}, ttl time.Duration) {
 	r.tree.Put(key, &Element{
 		Key:     key,
 		Payload: payload,
@@ -33,7 +45,7 @@ func (r *Store) Put(key string, payload interface{}, ttl time.Duration) {
 	})
 }
 
-func (r *Store) Get(key string) interface{} {
+func (r *Store) Get(key interface{}) interface{} {
 	v, ok := r.tree.Get(key)
 	if !ok {
 		return nil
@@ -47,13 +59,13 @@ func (r *Store) Get(key string) interface{} {
 	return element.Payload
 }
 
-func (r *Store) Remove(key string) {
+func (r *Store) Remove(key interface{}) {
 	if _, ok := r.tree.Get(key); ok {
 		r.tree.Remove(key)
 	}
 }
 
-func (r *Store) GetWithExpire(key string) (payload interface{}, expired time.Time) {
+func (r *Store) GetWithExpire(key interface{}) (payload interface{}, expired time.Time) {
 	v, ok := r.tree.Get(key)
 	if !ok {
 		return
@@ -100,17 +112,6 @@ func (r *Store) ToJSON() ([]byte, error) {
 func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		callbackFunc(v.Payload)
-	}
-}
-
-func (r *Store) CancelFunc(callbackFunc func(interface{}) bool) {
-	it := r.tree.Iterator()
-	for it.Next() {
-		v := it.Value().(*Element)
-		if callbackFunc(v.Payload) {
-			return
-		}
+		callbackFunc(it.Value())
 	}
 }
