@@ -13,7 +13,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	store := memory.NewStore()
+	store := memory.NewWithStringComparator()
 	elements := []string{
 		"1daf5910-dc70-4c19-baab-609c727f6cde",
 		"5d0f8663-e8c2-4fa0-8cab-539918d79ebb",
