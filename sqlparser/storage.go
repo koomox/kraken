@@ -20,7 +20,7 @@ func toImportStorageFormat(importField string) (b string) {
 	return strings.Replace(string(fieldFormat), "importField", importField, -1)
 }
 
-func ToImportStorageFormat(importHead, importPrefix string, data []MetadataTable) (b string) {
+func ToImportStorageFormat(importHead, importPrefix string, data []*MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
 		elements = append(elements, "\t"+fmt.Sprintf(`"%v/%v"`, importPrefix, data[i].ToLowerCase()))
@@ -34,7 +34,7 @@ func toStructStorageFormat(structName, structField string) (b string) {
 	return strings.Replace(b, "structField", structField, -1)
 }
 
-func ToStructStorageFormat(structName, fieldSuffix string, data []MetadataTable) (b string) {
+func ToStructStorageFormat(structName, fieldSuffix string, data []*MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
 		if data[i].PrimaryKeyLen() != 1 {
@@ -52,7 +52,7 @@ func toNewStorageFuncFormat(funcName, structName, contentField string) (b string
 	return strings.Replace(b, "contentField", contentField, -1)
 }
 
-func ToNewStorageFuncFormat(funcName, newFunc, structName string, data []MetadataTable) (b string) {
+func ToNewStorageFuncFormat(funcName, newFunc, structName string, data []*MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
 		if data[i].PrimaryKeyLen() != 1 {
@@ -70,7 +70,7 @@ func toUpdateStorageFuncFormat(funcName, structName, contentField string) (b str
 	return strings.Replace(b, "contentField", contentField, -1)
 }
 
-func ToUpdateStorageFuncFormat(funcName, structName string, data []MetadataTable) (b string) {
+func ToUpdateStorageFuncFormat(funcName, structName string, data []*MetadataTable) (b string) {
 	var elements []string
 	for i, _ := range data {
 		if data[i].PrimaryKeyLen() != 1 {

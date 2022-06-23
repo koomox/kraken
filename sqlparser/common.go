@@ -2,6 +2,7 @@ package sqlparser
 
 import (
 	"strings"
+	"fmt"
 )
 
 var (
@@ -63,9 +64,13 @@ var (
 	}
 )
 
+type Database struct {
+	Tables []*MetadataTable
+}
+
 type MetadataTable struct {
 	Name   string
-	Fields []Field
+	Fields []*Field
 }
 
 type Field struct {
@@ -76,29 +81,42 @@ type Field struct {
 	AutoIncrment bool
 }
 
-func (f *MetadataTable) Keys() (elements []string) {
-	for i := range f.Fields {
-		elements = append(elements, f.Fields[i].Name)
+func (source *Database)ToString() (s string) {
+	for k := range source.Tables {
+		s += fmt.Sprintf("Table: %s\n", source.Tables[k].Name)
+		for i := range source.Tables[k].Fields {
+			s += fmt.Sprintf("\tField: %s %s", source.Tables[k].Fields[i].Name, source.Tables[k].Fields[i].DataType)
+			if source.Tables[k].Fields[i].Unique {
+				s += " UNIQUE"
+			}
+			if source.Tables[k].Fields[i].PrimaryKey {
+				s += " PRIMARY KEY"
+			}
+			if source.Tables[k].Fields[i].AutoIncrment {
+				s += " AutoIncrment"
+			}
+			s += "\n"
+		}
 	}
 	return
 }
 
-func (f *MetadataTable) SetPrimaryKey(s string) {
+func (f *MetadataTable) PrimaryKey() (elements []*Field) {
 	for i := range f.Fields {
-		if strings.EqualFold(f.Fields[i].Name, s) {
+		if f.Fields[i].PrimaryKey {
+			elements = append(elements, f.Fields[i])
+		}
+	}
+	return
+}
+
+func (f *MetadataTable) SetPrimaryKey(name string) {
+	for i := range f.Fields {
+		if strings.EqualFold(f.Fields[i].Name, name) {
 			f.Fields[i].PrimaryKey = true
 			break
 		}
 	}
-}
-
-func (f *MetadataTable) PrimaryKey() *Field {
-	for i := range f.Fields {
-		if f.Fields[i].PrimaryKey {
-			return &f.Fields[i]
-		}
-	}
-	return nil
 }
 
 func (f *MetadataTable) PrimaryKeyLen() (n int) {
@@ -108,6 +126,48 @@ func (f *MetadataTable) PrimaryKeyLen() (n int) {
 		}
 	}
 	return
+}
+
+func (f *MetadataTable) TypeOf() string {
+	keys := f.PrimaryKey()
+	switch len(f.PrimaryKey()) {
+	case 1:
+		return keys[0].TypeOf()
+	default:
+		return "string"
+	}
+}
+
+func (f *MetadataTable) Id() string {
+	var ids []string
+	var idx []string
+	keys := f.PrimaryKey()
+	switch len(f.PrimaryKey()) {
+	case 1:
+		return fmt.Sprintf("element.%s", keys[0].ToUpperCase())
+	default:
+		for i := range keys {
+			ids = append(ids, "%v")
+			idx = append(idx, fmt.Sprintf("element.%s", keys[i].ToUpperCase()))
+		}
+		return "fmt.Sprintf(" + `"` + strings.Join(ids, "-") + `", ` + strings.Join(idx, ", ") + ")"
+	}
+}
+
+func (f *MetadataTable) id() string {
+	var ids []string
+	var idx []string
+	keys := f.PrimaryKey()
+	switch len(f.PrimaryKey()) {
+	case 1:
+		return fmt.Sprintf("%s", keys[0].ToLowerCase())
+	default:
+		for i := range keys {
+			ids = append(ids, "%v")
+			idx = append(idx, fmt.Sprintf("%s", keys[i].ToLowerCase()))
+		}
+		return "fmt.Sprintf(" + `"` + strings.Join(ids, "-") + `", ` + strings.Join(idx, ", ") + ")"
+	}
 }
 
 func (f *Field) TypeOf() string {

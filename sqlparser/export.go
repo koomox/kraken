@@ -22,21 +22,21 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
-func ExportFrontendColumnsFormatFile(head, foot, columnsName string, fileName string, data MetadataTable) error {
+func ExportFrontendColumnsFormatFile(head, foot, columnsName string, fileName string, data *MetadataTable) error {
 	element := head + "\n\n"
 	element += data.ToFrontendColumnsFormat(columnsName) + "\n\n"
 	element += foot
 	return WriteFile(element, fileName)
 }
 
-func ExportForntendParseFormatFile(pkgName, importHead, funcPrefix, tagName, fileName string, data MetadataTable) error {
+func ExportForntendParseFormatFile(pkgName, importHead, funcPrefix, tagName, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToForntendParseFormat(funcPrefix) + "\n\n"
 	element += data.ToStructFormat(tagName)
 	return WriteFile(element, fileName)
 }
 
-func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, whereFunc, selectFunc, structPrefix, fileName string, data MetadataTable) error {
+func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, whereFunc, selectFunc, structPrefix, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToCreateModelFuncFormat(createFunc, structPrefix) + "\n\n"
 	element += data.ToCompareModelFuncFormat(compreFunc, structPrefix) + "\n\n"
@@ -47,7 +47,7 @@ func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFu
 	return WriteFile(element, fileName)
 }
 
-func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix, fileName string, data MetadataTable) error {
+func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix, fileName string, data *MetadataTable) error {
 	if data.PrimaryKeyLen() != 1 {
 		return nil
 	}
@@ -56,7 +56,7 @@ func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix,
 	return WriteFile(element, fileName)
 }
 
-func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fieldSuffix, newFunc, updateFunc, fileName string, data []MetadataTable) error {
+func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fieldSuffix, newFunc, updateFunc, fileName string, data []*MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + ToImportStorageFormat(importHead, importPrefix, data) + "\n\n"
 	element += ToStructStorageFormat(structName, fieldSuffix, data) + "\n\n"
 	element += ToInitialStorageFuncFormat() + "\n\n"
@@ -65,28 +65,14 @@ func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fiel
 	return WriteFile(element, fileName)
 }
 
-func ExportStoreFormatFile(pkgName, importHead, mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
-	if data.PrimaryKeyLen() != 1 {
-		return nil
-	}
+func ExportStoreFormatFile(pkgName, importHead, newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName string, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	typeField := ""
-	if len(data.Fields) > 0 {
-		switch data.Fields[0].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			typeField = "int"
-		case "BIGINT":
-			typeField = "int64"
-		default:
-			typeField = "string"
-		}
-	}
-	element += data.ToStoreFormat(mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, typeField, tableName)
+	element += data.ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName)
 
 	return WriteFile(element, fileName)
 }
 
-func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, whereFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data MetadataTable) error {
+func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, updateFunc, removeFunc, whereFunc, funcPrefix, subPrefix, structPrefix, tableName, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertCrudFormat(insertFunc, structPrefix, tableName) + "\n\n"
 	element += data.ToSelectCrudFormat(selectFunc, structPrefix, tableName) + "\n\n"
@@ -98,7 +84,7 @@ func ExportPublicCrudFormatFile(pkgName, importHead, insertFunc, selectFunc, upd
 	return WriteFile(element, fileName)
 }
 
-func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, selectName, fileName string, data MetadataTable) error {
+func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryName, parserName, selectName, fileName string, data *MetadataTable) error {
 	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
 	element += data.ToInsertFormat(structPrefix, insertName) + "\n\n"
 	element += data.ToUpdateFormat("update") + "\n\n"
@@ -110,7 +96,7 @@ func ExportCrudFormatFile(pkgName, importHead, structPrefix, insertName, queryNa
 	return WriteFile(element, fileName)
 }
 
-func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTable) error {
+func ExportStructFormatFile(pkgName, tagName, fileName string, data []*MetadataTable) error {
 	tableSuffix := "Table"
 	importField := []string{"strconv", "fmt"}
 	values := fmt.Sprintf("package %v\n\n", pkgName)
@@ -121,7 +107,7 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 	}
 	values += ")\n\n"
 	fieldFormat, _ := base64.RawStdEncoding.DecodeString(parsetIntFuncFormat)
-	values += string(fieldFormat) +"\n"
+	values += string(fieldFormat) + "\n"
 	// select func
 	values += "\nfunc Select(table string) string {\n"
 	values += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %v`, table)\n", "%v")
@@ -145,19 +131,19 @@ func ExportStructFormatFile(pkgName, tagName, fileName string, data []MetadataTa
 	return WriteFile(values, fileName)
 }
 
-func ExportStructCompareFormatFile(pkgName, src, dst, funcName, fileName string, data []MetadataTable) error {
+func ExportStructCompareFormatFile(pkgName, src, dst, funcName, fileName string, data []*MetadataTable) error {
 	values := fmt.Sprintf("package %v\n\n", pkgName)
 	for i := range data {
 		if data[i].Name == "" {
 			continue
 		}
-		values += data[i].ToStructCompareFormat(src, dst, funcName) +"\n\n"
+		values += data[i].ToStructCompareFormat(src, dst, funcName) + "\n\n"
 	}
 
 	return WriteFile(values, fileName)
 }
 
-func ExportFile(filename, tagField string, data []MetadataTable) error {
+func ExportFile(filename, tagField string, data []*MetadataTable) error {
 	var element string
 	for i, _ := range data {
 		element += "\n\n"

@@ -4,7 +4,8 @@ import (
 	"strings"
 )
 
-func findField(s string) (element Field) {
+func findField(s string) (element *Field) {
+	element = &Field{}
 	b := Split(s, " ")
 	for i := 0; i < len(b); i++ {
 		if b[i] == "" {
@@ -93,9 +94,10 @@ func Split(s, sep string) (elements []string) {
 	return
 }
 
-func FromFile(filename string) (elements []MetadataTable) {
-	element := &MetadataTable{}
-	counter := 0
+func FromFile(filename string) (source *Database) {
+	source = &Database{}
+	table := &MetadataTable{}
+	isValid := false
 	readFile(func(s string) {
 		if s == "" || strings.HasPrefix(s, "--") {
 			return
@@ -107,29 +109,34 @@ func FromFile(filename string) (elements []MetadataTable) {
 			if strings.HasPrefix(s, "PRIMARY KEY") {
 				if keys := findPrimaryKey(strings.TrimPrefix(s, "PRIMARY KEY")); keys != nil && len(keys) > 0 {
 					for i := range keys {
-						element.SetPrimaryKey(keys[i])
+						table.SetPrimaryKey(keys[i])
 					}
 				}
 			}
 			return
+		case "UNIQUE":
+			if strings.HasPrefix(s, "UNIQUE INDEX") {
+				return
+			}
 		case "CREATE":
 			if strings.HasPrefix(s, "CREATE TABLE") && strings.HasSuffix(s, "(") {
-				counter++
-				element = &MetadataTable{Name: findTableName(s)}
+				isValid = true
+				table = &MetadataTable{Name: findTableName(s)}
 			}
 			return
 		default:
-			if strings.HasPrefix(s, ")") && counter > 0 {
-				counter--
-				elements = append(elements, *element)
-				element = &MetadataTable{}
+			if strings.HasPrefix(s, ")") && isValid {
+				isValid = false
+				source.Tables = append(source.Tables, table)
+				table = &MetadataTable{}
 				return
 			}
 		}
 		if v != "" {
 			return
 		}
-		element.Fields = append(element.Fields, findField(s))
+		table.Fields = append(table.Fields, findField(s))
 	}, filename)
+
 	return
 }

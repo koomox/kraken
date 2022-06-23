@@ -1,237 +1,167 @@
 package sqlparser
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 )
 
-const (
-	storeStructFormat               = "dHlwZSBTdG9yZSBzdHJ1Y3QgewogICAgc3luYy5SV011dGV4CiAgICB0YWJsZSAgIHN0cmluZwogICAgc3RvcmUgICBjb21tb24uQnVja2V0CmNvbnRlbnRGaWVsZCAgICBVcGRhdGVkIGJvb2wKICAgIFBhdGNoICAgW11pbnRlcmZhY2V7fQp9"
-	newStoreFuncFormat              = "ZnVuYyBmdW5jTmFtZShjIGNvbW1vbi5CdWNrZXQpIChzdG9yZSAqU3RvcmUpIHsKICAgIHN0b3JlID0gJlN0b3JlewogICAgICAgIHRhYmxlOiAgIHRhYmxlTmFtZSwKICAgICAgICBzdG9yZTogICBjLAptYWtlRmllbGQKICAgICAgICBVcGRhdGVkOiBmYWxzZSwKICAgIH0KICAgIGVsZW1lbnRzIDo9IHF1ZXJ5KHN1YkZ1bmMoc3RvcmUudGFibGUpKQogICAgaWYgZWxlbWVudHMgPT0gbmlsIHx8IGxlbihlbGVtZW50cykgPD0gMCB7CiAgICAgICAgcmV0dXJuCiAgICB9CiAgICBmb3IgaSA6PSByYW5nZSBlbGVtZW50cyB7CiAgICAgICAgZWxlbWVudCA6PSBlbGVtZW50c1tpXQogICAgICAgIHN0b3JlLnN0b3JlLlB1dChlbGVtZW50LmluZGV4RmllbGQsIGVsZW1lbnQpCm1hcHBpbmdGaWVsZAogICAgfQoKICAgIHJldHVybgp9"
-	mapStoreFuncFormat              = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZSgpIHsKbWFrZUZpZWxkCglzdG9yZS5zdG9yZS5DYWxsYmFja0Z1bmMoZnVuYyh2IGludGVyZmFjZXt9KSB7CgkJaWYgdiAhPSBuaWwgewoJCQllbGVtZW50IDo9IHYuKCpzdHJ1Y3ROYW1lKQptYXBwaW5nRmllbGQKCQl9Cgl9KQpzdG9yZUZpZWxkCn0"
-	updateStoreFuncFormat           = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShkYXRldGltZSBzdHJpbmcpIHsKICAgIHN0b3JlLlVwZGF0ZWQgPSBmYWxzZQogICAgc3RvcmUuUGF0Y2ggPSBuaWwKICAgIGVsZW1lbnRzIDo9IHF1ZXJ5KHN1YkZ1bmMoZGF0ZXRpbWUsIHN0b3JlLnRhYmxlKSkKICAgIGlmIGVsZW1lbnRzID09IG5pbCB8fCBsZW4oZWxlbWVudHMpIDw9IDAgewogICAgICAgIHJldHVybgogICAgfQogICAgZm9yIGkgOj0gMDsgaSA8IGxlbihlbGVtZW50cyk7IGkrKyB7CiAgICAgICAgZWxlbWVudCA6PSBlbGVtZW50c1tpXQogICAgICAgIGlmICFzdG9yZS5jb21wYXJlRnVuYyhlbGVtZW50KSB7CiAgICAgICAgICAgIHN0b3JlLnN0b3JlLlB1dChlbGVtZW50LmluZGV4RmllbGQsIGVsZW1lbnQpCiAgICAgICAgICAgIHN0b3JlLlBhdGNoID0gYXBwZW5kKHN0b3JlLlBhdGNoLCBlbGVtZW50KQogICAgICAgICAgICBpZiAhc3RvcmUuVXBkYXRlZCB7CiAgICAgICAgICAgICAgICBzdG9yZS5VcGRhdGVkID0gdHJ1ZQogICAgICAgICAgICB9CiAgICAgICAgfQogICAgfQptYXBGaWVsZAp9"
-	compareStoreFuncFormat          = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShlbGVtZW50ICpzdHJ1Y3ROYW1lKSBib29sIHsKICAgIGlmIHYgOj0gc3RvcmUuc3RvcmUuR2V0KGVsZW1lbnQuaW5kZXhGaWVsZCk7IHYgIT0gbmlsIHsKICAgICAgICByZXR1cm4gdi4oKnN0cnVjdE5hbWUpLmNvbXBhcmVGdW5jKGVsZW1lbnQpCiAgICB9CgogICAgcmV0dXJuIGZhbHNlCn0"
-	standardStoreFuncFormat         = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBHZXQoYXJnc0ZpZWxkKSBpbnRlcmZhY2V7fSB7CiAgICByZXR1cm4gc3RvcmUuc3RvcmUuR2V0KGtleXNGaWVsZCkKfQoKZnVuYyAoc3RvcmUgKlN0b3JlKSBSZW1vdmUoYXJnc0ZpZWxkKSB7CiAgICBzdG9yZS5zdG9yZS5SZW1vdmUoa2V5c0ZpZWxkKQp9CgpmdW5jIChzdG9yZSAqU3RvcmUpIFZhbHVlcygpIChlbGVtZW50cyBbXSpzdHJ1Y3ROYW1lKSB7CiAgICBzdG9yZS5zdG9yZS5DYWxsYmFja0Z1bmMoZnVuYyh2IGludGVyZmFjZXt9KSB7CiAgICAgICAgaWYgdiAhPSBuaWwgewogICAgICAgICAgICBlbGVtZW50cyA9IGFwcGVuZChlbGVtZW50cywgdi4oKnN0cnVjdE5hbWUpKQogICAgICAgIH0KICAgIH0pCiAgICByZXR1cm4KfQoKZnVuYyAoc3RvcmUgKlN0b3JlKSBUb0pTT04oKSAoW11ieXRlLCBlcnJvcikgewogICAgcmV0dXJuIHN0b3JlLnN0b3JlLlRvSlNPTigpCn0KCmZ1bmMgKHN0b3JlICpTdG9yZSkgZnVuY05hbWUoYXJnc0ZpZWxkKSAqc3RydWN0TmFtZSB7CiAgICBpZiB2IDo9IHN0b3JlLkdldChrZXlzRmllbGQpOyB2ICE9IG5pbCB7CiAgICAgICAgcmV0dXJuIHYuKCpzdHJ1Y3ROYW1lKQogICAgfQoKICAgIHJldHVybiBuaWwKfQ"
-	selectStoreFuncFormat           = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShmaWVsZE5hbWUgZmlsZWRUeXBlKSAqc3RydWN0TmFtZSB7CiAgICBpZiBpLCBmb3VuZCA6PSBzdG9yZS5tYXBGaWVsZDsgZm91bmQgewogICAgICAgIGlmIHYgOj0gc3RvcmUuR2V0KGkpOyB2ICE9IG5pbCB7CiAgICAgICAgICAgIHJldHVybiB2Ligqc3RydWN0TmFtZSkKICAgICAgICB9CiAgICB9CgogICAgcmV0dXJuIG5pbAp9"
-	selectStorePrimaryKeyFuncFormat = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShhcmdzRmllbGQpICpzdHJ1Y3ROYW1lIHsKICAgIHN0b3JlLnN0b3JlLkNhbGxiYWNrRnVuYyhmdW5jKHYgaW50ZXJmYWNle30pIHsKICAgICAgICBpZiB2ICE9IG5pbCB7CiAgICAgICAgICAgIGlmIGZvcm1hdEZpZWxkIHsKICAgICAgICAgICAgICAgIHJldHVybiB2Ligqc3RydWN0TmFtZSkKICAgICAgICAgICAgfQogICAgICAgIH0KICAgIH0pCiAgICByZXR1cm4gbmlsCn0"
-	selectStoreCallbackFuncFormat   = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShhcmdzRmllbGQpIChlbGVtZW50cyBbXSpzdHJ1Y3ROYW1lKSB7CiAgICBzdG9yZS5zdG9yZS5DYWxsYmFja0Z1bmMoZnVuYyh2IGludGVyZmFjZXt9KSB7CiAgICAgICAgaWYgdiAhPSBuaWwgewogICAgICAgICAgICBpZiBmb3JtYXRGaWVsZCB7CiAgICAgICAgICAgICAgICBlbGVtZW50cyA9IGFwcGVuZChlbGVtZW50cywgdi4oKnN0cnVjdE5hbWUpKQogICAgICAgICAgICB9CiAgICAgICAgfQogICAgfSkKICAgIHJldHVybgp9"
-)
-
-func (m *MetadataTable) ToStoreFormat(mapFunc, newFunc, selectFunc, updateFunc, compareFunc, compareStructFunc, selectPrefix, structPrefix, typeField, tableName string) (b string) {
+func (m *MetadataTable) ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName string) (b string) {
 	b = m.toStoreStructFormat()
 	b += "\n\n"
-	b += m.toNewStoreFuncFormat(newFunc, selectFunc, structPrefix, tableName)
+	b += m.toNewStoreFuncFormat(newFunc, selectFunc, structPrefix, structName)
 	b += "\n\n"
-	b += m.toMapStoreFuncFormat(mapFunc, structPrefix)
+	isVaild := false
+	for i := range m.Fields {
+		if !m.Fields[i].AutoIncrment && !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
+			isVaild = true
+			break
+		}
+	}
+	if isVaild {
+		b += m.toMapStoreFuncFormat(mapFunc, structPrefix, structName, compareStruct)
+		b += "\n\n"
+	}
+	b += m.toUpdateStoreFuncFormat(updateFunc, updateFunc, compareFunc, mapFunc, structPrefix, structName)
 	b += "\n\n"
-	b += m.toUpdateStoreFuncFormat(updateFunc, compareFunc, mapFunc, structPrefix)
+	b += m.toCompareStoreFuncFormat(compareFunc, compareFunc, structPrefix, structName, "element", compareStruct)
 	b += "\n\n"
-	b += m.toCompareStoreFuncFormat(compareFunc, compareStructFunc, structPrefix)
+	b += m.toStandardStoreFuncFormat(structPrefix, structName, "elements", compareStruct)
 	b += "\n\n"
-	b += m.toStandardStoreFuncFormat(selectPrefix, structPrefix)
-	b += m.toSelectStoreFuncFormat(selectPrefix, structPrefix)
+	b += m.toSelectStoreFuncFormat(subSelectFunc, structPrefix, structName, compareStruct)
 	return
 }
 
-func toStoreStructFormat(contentField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(storeStructFormat)
-	return strings.Replace(string(fieldFormat), "contentField", contentField, -1)
-}
-
 func (m *MetadataTable) toStoreStructFormat() (b string) {
-	typeField := ""
-	if v := m.PrimaryKey(); v != nil {
-		typeField = v.TypeOf()
-	}
 	fieldsLen := len(m.Fields)
-	var elements []string
-	counter := 0
+	b = "type Store struct {\n\tsync.RWMutex\n\tstore common.Cache\n\t"
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
 		}
-		counter++
-		elements = append(elements, fmt.Sprintf("\t%vMapping map[%v]%v\n", toFieldUpperFormat(m.Fields[i].Name), m.Fields[i].TypeOf(), typeField))
+		b += fmt.Sprintf("%vMapping map[%v]%v\n\t", toFieldUpperFormat(m.Fields[i].Name), m.Fields[i].TypeOf(), m.TypeOf())
 	}
-
-	if counter == 0 {
-		return toStoreStructFormat("")
-	}
-	return toStoreStructFormat(strings.Join(elements, ""))
+	b += "Updated bool\n\tPatch []interface{}\n}"
+	return b
 }
 
-func toNewStoreFuncFormat(funcName, subFunc, makeField, mappingField, indexField, tableName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(newStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "makeField", makeField, -1)
-	b = strings.Replace(b, "tableName", tableName, -1)
-	b = strings.Replace(b, "funcName", funcName, -1)
-	b = strings.Replace(b, "subFunc", subFunc, -1)
-	b = strings.Replace(b, "indexField", indexField, -1)
-	return strings.Replace(b, "mappingField", mappingField, -1)
-}
-
-func (m *MetadataTable) toNewStoreFuncFormat(funcName, subFunc, structPrefix, tableName string) (b string) {
-	keyType := ""
-	keyName := ""
-	if v := m.PrimaryKey(); v != nil {
-		keyType = v.TypeOf()
-		keyName = v.ToUpperCase()
-	}
+func (m *MetadataTable) toNewStoreFuncFormat(funcName, selectFunc, structPrefix, structName string) (b string) {
 	fieldsLen := len(m.Fields)
-	var makeField []string
-	var mappingField []string
-	counter := 0
-	for i := 0; i < fieldsLen; i++ {
-		if !m.Fields[i].Unique || i == 0 {
-			continue
-		}
-		counter++
-		makeField = append(makeField, fmt.Sprintf("\t\t%vMapping: make(map[%v]%v),", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), keyType))
-		mappingField = append(mappingField, fmt.Sprintf("\t\tstore.%vMapping[element.%v] = element.%v", m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase(), keyName))
-	}
-
-	makeValues := ""
-	mappingValues := ""
-	if counter != 0 {
-		makeValues = strings.Join(makeField, "\n")
-		mappingValues = strings.Join(mappingField, "\n")
-	}
-	return toNewStoreFuncFormat(funcName, structPrefix+subFunc, makeValues, mappingValues, keyName, tableName)
-}
-
-func toMapStoreFuncFormat(funcName, structName, makeField, mappingField, storeField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(mapStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "makeField", makeField, -1)
-	b = strings.Replace(b, "mappingField", mappingField, -1)
-	return strings.Replace(b, "storeField", storeField, -1)
-}
-
-func (m *MetadataTable) toMapStoreFuncFormat(funcName, structPrefix string) (b string) {
-	keyType := ""
-	keyName := ""
-	if v := m.PrimaryKey(); v != nil {
-		keyType = v.TypeOf()
-		keyName = v.ToUpperCase()
-	}
-	structName := structPrefix + toFieldUpperFormat(m.Name)
-	fieldsLen := len(m.Fields)
-	var makeField []string
-	var mappingField []string
-	var storeField []string
-	counter := 0
+	b = fmt.Sprintf("func %s(c common.Cache) (%s *%s) {\n\t%s = &%s{\n", funcName, structPrefix, structName, structPrefix, structName)
+	b += fmt.Sprintf("\t\t%s:   c,\n", structPrefix)
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
 		}
-		counter++
-		makeField = append(makeField, fmt.Sprintf("\t%vMapping := make(map[%v]%v)", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), keyType))
-		mappingField = append(mappingField, fmt.Sprintf("\t\t\t%vMapping[element.%v] = element.%v", m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase(), keyName))
-		storeField = append(storeField, fmt.Sprintf("\tstore.%vMapping = %vMapping", m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase()))
+		b += fmt.Sprintf("\t\t%vMapping: make(map[%v]%v),\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), m.TypeOf())
 	}
-
-	if counter == 0 {
-		return ""
-	}
-	return toMapStoreFuncFormat(funcName, structName, strings.Join(makeField, "\n"), strings.Join(mappingField, "\n"), strings.Join(storeField, "\n"))
-}
-
-func toUpdateStoreFuncFormat(funcName, compareFunc, subFunc, indexField, mapField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "compareFunc", compareFunc, -1)
-	b = strings.Replace(b, "subFunc", subFunc, -1)
-	b = strings.Replace(b, "indexField", indexField, -1)
-	return strings.Replace(b, "mapField", mapField, -1)
-}
-
-func (m *MetadataTable) toUpdateStoreFuncFormat(funcName, compareFunc, mapFunc, structPrefix string) (b string) {
-	fieldsLen := len(m.Fields)
-	mapCount := 0
-	keyName := ""
-	if v := m.PrimaryKey(); v != nil {
-		keyName = v.ToUpperCase()
-	}
+	b += "\t\tUpdated: false,\n\t}\n"
+	b += fmt.Sprintf("\telements := query(%s())\n", selectFunc)
+	b += "\tif elements == nil || len(elements) <= 0 {\n\t\treturn\n\t}\n"
+	b += "\tfor i := range elements {\n\t\telement := elements[i]\n"
+	b += fmt.Sprintf("\t\t%s.store.Put(%s, element)\n", structPrefix, m.Id())
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
 		}
-		mapCount++
+		b += fmt.Sprintf("\t\t%s.%sMapping[element.%s] = %s\n", structPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase(), m.Id())
 	}
-	mapField := ""
-	if mapCount != 0 {
-		mapField = fmt.Sprintf("\tif store.Updated {\n\t\tstore.%v()\n\t}", mapFunc)
+	b += "\t}\n\treturn\n}"
+	return
+}
+
+func (m *MetadataTable) toMapStoreFuncFormat(funcName, structPrefix, structName, compareStruct string) (b string) {
+	fieldsLen := len(m.Fields)
+	b = fmt.Sprintf("func (%s *%s) %s() {\n", structPrefix, structName, funcName)
+	for i := 0; i < fieldsLen; i++ {
+		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+			continue
+		}
+		b += fmt.Sprintf("\t%sMapping := make(map[%s]%s)\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), m.TypeOf())
 	}
-	return toUpdateStoreFuncFormat(funcName, compareFunc, structPrefix+funcName, keyName, mapField)
-}
-
-func toCompareStoreFuncFormat(funcName, compareFunc, indexField, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "compareFunc", compareFunc, -1)
-	b = strings.Replace(b, "indexField", indexField, -1)
-	return strings.Replace(b, "structName", structName, -1)
-}
-
-func (m *MetadataTable) toCompareStoreFuncFormat(funcName, compareFunc, structPrefix string) (b string) {
-	structName := structPrefix + toFieldUpperFormat(m.Name)
-	indexField := toFieldUpperFormat(m.Fields[0].Name)
-	return toCompareStoreFuncFormat(funcName, compareFunc, indexField, structName)
-}
-
-func toStandardStoreFuncFormat(funcName, argsField, keysField, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(standardStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "argsField", argsField, -1)
-	b = strings.Replace(b, "keysField", keysField, -1)
-	return strings.Replace(b, "structName", structName, -1)
-}
-
-func (m *MetadataTable) toStandardStoreFuncFormat(funcPrefix, structPrefix string) (b string) {
-	structName := structPrefix + m.ToUpperCase()
-	key := m.PrimaryKey()
-	funcName := funcPrefix + key.ToUpperCase()
-	if key == nil {
-		return
+	b += fmt.Sprintf("\t%s.store.CallbackFunc(func(v interface{}) {\n", structPrefix)
+	b += "\t\tif v != nil {\n"
+	b += fmt.Sprintf("\t\t\telement := v.(*%s)\n", compareStruct)
+	b += fmt.Sprintf("\t\t\tidx := %s\n", m.Id())
+	for i := 0; i < fieldsLen; i++ {
+		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+			continue
+		}
+		b += fmt.Sprintf("\t\t\t%sMapping[element.%s] = idx\n", m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase())
 	}
-	return toStandardStoreFuncFormat(funcName, fmt.Sprintf("%v %v", key.ToLowerCamelCase(), key.TypeOf()), key.ToLowerCamelCase(), structName)
+	b += "\t\t}\n\t})\n"
+	for i := 0; i < fieldsLen; i++ {
+		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+			continue
+		}
+		b += fmt.Sprintf("\t%s.%vMapping = %vMapping\n", structPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].ToUpperCase())
+	}
+	b += "}"
+	return
 }
 
-func toSelectStoreFuncFormat(mapField, fieldName, filedType, funcName, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectStoreFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	b = strings.Replace(b, "filedType", filedType, -1)
-	return strings.Replace(b, "mapField", mapField, -1)
+func (m *MetadataTable) toUpdateStoreFuncFormat(funcName, updateFunc, compareFunc, mapFunc, structPrefix, structName string) (b string) {
+	b = fmt.Sprintf("func (%s *%s) %s(datetime string) {\n", structPrefix, structName, funcName)
+	b += fmt.Sprintf("\t%s.Updated = false\n\t%s.Patch = nil\n", structPrefix, structPrefix)
+	b += fmt.Sprintf("\telements := query(%s(datetime))\n", updateFunc)
+	b += "\tif elements == nil || len(elements) <= 0 {\n\t\treturn\n\t}\n"
+	b += "\tfor i := 0; i < len(elements); i++ {\n"
+	b += "\t\telement := elements[i]\n"
+	b += fmt.Sprintf("\t\tif !%s.%s(element) {\n", structPrefix, compareFunc)
+	b += fmt.Sprintf("\t\t\t%s.store.Put(%s, element)\n", structPrefix, m.Id())
+	b += fmt.Sprintf("\t\t\t%s.Patch = append(%s.Patch, element)\n", structPrefix, structPrefix)
+	b += fmt.Sprintf("\t\t\tif !%s.Updated {\n\t\t\t\t%s.Updated = true\n\t\t\t}\n", structPrefix, structPrefix)
+	b += "\t\t}\n\t}"
+	isVaild := false
+	for i := range m.Fields {
+		if !m.Fields[i].AutoIncrment && !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
+			isVaild = true
+			break
+		}
+	}
+	if isVaild {
+		b += fmt.Sprintf("\n\tif %s.Updated {\n\t\t%s.%s()\n\t}\n}", structPrefix, structPrefix, mapFunc)
+	}
+	
+	return
 }
 
-func toSelectStoreCallbackFuncFormat(funcName, argsField, formatField, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectStoreCallbackFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "argsField", argsField, -1)
-	b = strings.Replace(b, "formatField", formatField, -1)
-	return strings.Replace(b, "structName", structName, -1)
+func (m *MetadataTable) toCompareStoreFuncFormat(funcName, compareFunc, srcName, srcStruct, dstName, dstStruct string) (b string) {
+	b = fmt.Sprintf("func (%s *%s) %s(%s *%s) bool {\n", srcName, srcStruct, funcName, dstName, dstStruct)
+	b += fmt.Sprintf("\tif v := %s.store.Get(%s); v != nil {\n", srcName, m.Id())
+	b += fmt.Sprintf("\t\treturn v.(*%s).%s(%s)\n\t}\n\treturn false\n}", dstStruct, compareFunc, dstName)
+	return
 }
 
-func toSelectStorePrimaryKeyFuncFormat(funcName, argsField, formatField, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectStorePrimaryKeyFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "argsField", argsField, -1)
-	b = strings.Replace(b, "formatField", formatField, -1)
-	return strings.Replace(b, "structName", structName, -1)
+func (m *MetadataTable) toStandardStoreFuncFormat(srcName, srcStruct, dstName, dstStruct string) (b string) {
+	b = fmt.Sprintf("func (%s *%s) Get(key %v) *%s {\n\tif v := %s.store.Get(key); v != nil {\n\t\treturn v.(*%s)\n\t}\n\treturn nil\n}\n", srcName, srcStruct, m.TypeOf(), dstStruct, srcName, dstStruct)
+	b += fmt.Sprintf("\nfunc (%s *%s) Remove(key %v) {\n\t%s.store.Remove(key)\n}\n", srcName, srcStruct, m.TypeOf(), srcName)
+	b += fmt.Sprintf("\nfunc (%s *%s) Values() (%s []*%s) {\n\t%s.store.CallbackFunc(func(v interface{}) {\n\t\tif v != nil {\n\t\t\t%s = append(%s, v.(*%s))\n\t\t}\n\t})\n\treturn\n}\n", srcName, srcStruct, dstName, dstStruct, srcName, dstName, dstName, dstStruct)
+	b += fmt.Sprintf("\nfunc (%s *%s) ToJSON() ([]byte, error) {\n\treturn %s.store.ToJSON()\n}", srcName, srcStruct, srcName)
+	return
 }
 
-func (m *MetadataTable) toSelectStoreFuncFormat(funcPrefix, structPrefix string) (b string) {
-	structName := structPrefix + m.ToUpperCase()
+func (m *MetadataTable) toSelectStoreFuncFormat(funcPrefix, structPrefix, structName, compareStruct string) (b string) {
+	var idx []string
+	var ids []string
+	keys := m.PrimaryKey()
+	switch len(keys) {
+	case 1:
+		b = fmt.Sprintf("func (%s *%s) %s%s(%s %s) *%s {\n", structPrefix, structName, funcPrefix, keys[0].ToUpperCase(), keys[0].ToLowerCase(), keys[0].TypeOf(), compareStruct)
+	default:
+		for _, v := range keys {
+			idx = append(idx, fmt.Sprintf("%s", v.ToUpperCase()))
+			ids = append(ids, fmt.Sprintf("%s %s", v.ToLowerCase(), v.TypeOf()))
+		}
+		b = fmt.Sprintf("func (%s *%s) %s%s(%s) *%s {\n", structPrefix, structName, funcPrefix, strings.Join(idx, "And"), strings.Join(ids, ", "), compareStruct)
+	}
+	b += fmt.Sprintf("\treturn %s.Get(%s)\n}", structPrefix, m.id())
+
 	for i := range m.Fields {
 		if !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
-			b += "\n\n"
-			mapField := fmt.Sprintf("%vMapping[%v]", m.Fields[i].ToUpperCase(), m.Fields[i].Name)
-			funcName := funcPrefix + m.Fields[i].ToUpperCase()
-			b += toSelectStoreFuncFormat(mapField, m.Fields[i].Name, m.Fields[i].TypeOf(), funcName, structName)
+			b += fmt.Sprintf("\n\nfunc (%s *%s) %s%s(%s %s) *%s {\n", structPrefix, structName, funcPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].ToLowerCase(), m.Fields[i].TypeOf(), compareStruct)
+			b += fmt.Sprintf("\tif i, found := %s.%sMapping[%s]; found {\n", structPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].ToLowerCase())
+			b += fmt.Sprintf("\t\treturn %s.Get(i)\n", structPrefix)
+			b += "\t}\n\treturn nil\n}"
 		}
 	}
 	return
