@@ -17,10 +17,10 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
-func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir string, source *Database) {
-	commandImport := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", pkgName, pkgName)
-	commonImport := fmt.Sprintf("import (\n\t\"database/sql\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", pkgName, pkgName)
-	storeImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s/component/database\"\n\t\"sync\"\n)", pkgName, pkgName)
+func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, rootDir string, source *Database) {
+	commandImport := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", modName, modName)
+	commonImport := fmt.Sprintf("import (\n\t\"database/sql\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", modName, modName)
+	storeImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s/component/database\"\n\t\"sync\"\n)", modName, modName)
 	compare := fmt.Sprintf("package %v\n\n", pkgName)
 	values := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
 	parsetIntFormat := "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
@@ -29,11 +29,11 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 	whereFormat := "func Where(command string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE %v`, table, command)\n}"
 	updateTickerFormat := "func UpdateTicker(updated_at string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > \"%v\"`, table, updated_at)\n}"
 	values += "\n\nconst (\n"
-	structArray := []string{}
-	compareArray := []string{}
+	var structArray []string
+	var compareArray []string
 
 	count := 0
-	ch := make(chan error, 4)
+	ch := make(chan error, 3)
 	for i := range source.Tables {
 		if source.Tables[i].Name == "" {
 			continue
@@ -45,9 +45,9 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 		compareArray = append(compareArray, source.Tables[i].ToStructCompareFormat("s", "d", "Compare"))
 		structName := fmt.Sprintf("%s.%s", pkgName, source.Tables[i].ToUpperCase())
 		middleName := source.Tables[i].ToLowerCase()
-		commandFileName := path.Join(baseDir, pkgName, middleName, commandFile)
-		commonFileName := path.Join(baseDir, pkgName, middleName, commonFile)
-		storeFileName := path.Join(baseDir, pkgName, middleName, storeFile)
+		commandFileName := path.Join(rootDir, pkgName, middleName, commandFile)
+		commonFileName := path.Join(rootDir, pkgName, middleName, commonFile)
+		storeFileName := path.Join(rootDir, pkgName, middleName, storeFile)
 		go func(pkgName, importHead, insertFunc, updateFunc, removeFunc, queryFunc, parserFunc, selectFunc, structPrefix, structName, databasePrefix, fileName string, data *MetadataTable){
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToInsertSQLFormat(insertFunc, structPrefix, structName) + "\n\n"
@@ -87,10 +87,10 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 	values += whereFormat + "\n\n"
 	values += updateTickerFormat + "\n\n"
 	values += strings.Join(structArray, "\n\n")
-	if err := WriteFile(values, path.Join(baseDir, pkgName, commonFile)); err != nil {
+	if err := WriteFile(values, path.Join(rootDir, pkgName, commonFile)); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", commonFile, err)
 	}
-	if err := WriteFile(compare + strings.Join(compareArray, "\n\n"), path.Join(baseDir, pkgName, "compare.go")); err != nil {
+	if err := WriteFile(compare + strings.Join(compareArray, "\n\n"), path.Join(rootDir, pkgName, "compare.go")); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", "compare.go", err)
 	}
 
@@ -99,6 +99,55 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 		case err := <-ch:
 			fmt.Printf("[%d]ExportCrudFormatFile: %v\n", i+1, err)
 		}
+	}
+}
+
+func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, rootDir string, source *Database) {
+	store := "store"
+	Store := "Store"
+	values := fmt.Sprintf("package %s\n\nimport (\n\t\"encoding/json\"\n", pkgName)
+	values += fmt.Sprintf("\t\"%s/common/cache\"\n\t\"%s/%s/%s\"\n", modName, modName, component, database)
+
+	var importArray []string
+	var structArray []string
+	var storeArray []string
+	var updateArray []string
+	for i := range source.Tables {
+		if source.Tables[i].Name == "" {
+			continue
+		}
+		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, component, database, source.Tables[i].ToLowerCase()))
+		structArray = append(structArray, fmt.Sprintf("\t%s *%s.%s\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), Store))
+		updateArray = append(updateArray, fmt.Sprintf("\t%s.%s.UpdateTicker(datetime)\n", store, source.Tables[i].ToUpperCase()))
+
+		switch source.Tables[i].TypeOf() {
+		case "int":
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithIntComparator"))
+		case "int64":
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithInt64Comparator"))
+		default:
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithStringComparator"))
+		}
+	}
+
+	values += strings.Join(importArray, "")
+	values += "\t\"sync\"\n\t\"time\"\n)\n\n"
+	values += fmt.Sprintf("type %s struct {\n\tsync.RWMutex\n", Store)
+	values += strings.Join(structArray, "")
+	values += "\tFix []interface{}\n}\n\n"
+	values += fmt.Sprintf("var (\n\tcurrent = &%s{}\n)\n\n", Store)
+	values += "func Initial() {\n\tcurrent = NewStore()\n}\n\n"
+	values += fmt.Sprintf("func NewStore() *%s {\n", Store)
+	values += fmt.Sprintf("\treturn &%s{\n", Store)
+	values += strings.Join(storeArray, "")
+	values += "\t}\n}\n\n"
+	values += fmt.Sprintf("func (%s *%s) UpdateTicker(datetime string) {\n", store, Store)
+	values += strings.Join(updateArray, "")
+	values += "}"
+
+	filename := path.Join(rootDir, pkgName, commonFile)
+	if err := WriteFile(values, filename); err != nil {
+		fmt.Printf("[%s]ExportStorageFormatFile: %v\n", filename, err)
 	}
 }
 
@@ -124,24 +173,6 @@ func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFu
 	element += data.ToRemoveModelFuncFormat(removeFunc, removeFunc) + "\n\n"
 	element += data.ToWhereModelFuncFormat(whereFunc, structPrefix) + "\n\n"
 	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix)
-	return WriteFile(element, fileName)
-}
-
-func ExportStorageSubFormatFile(pkgName, importHead, selectPrefix, structPrefix, fileName string, data *MetadataTable) error {
-	if data.PrimaryKeyLen() != 1 {
-		return nil
-	}
-	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToSelectStorageFuncFormat(selectPrefix, structPrefix)
-	return WriteFile(element, fileName)
-}
-
-func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fieldSuffix, newFunc, updateFunc, fileName string, data []*MetadataTable) error {
-	element := "package " + pkgName + "\n\n" + ToImportStorageFormat(importHead, importPrefix, data) + "\n\n"
-	element += ToStructStorageFormat(structName, fieldSuffix, data) + "\n\n"
-	element += ToInitialStorageFuncFormat() + "\n\n"
-	element += ToNewStorageFuncFormat(newFunc, newFunc, structName, data) + "\n\n"
-	element += ToUpdateStorageFuncFormat(updateFunc, structName, data) + "\n\n"
 	return WriteFile(element, fileName)
 }
 
