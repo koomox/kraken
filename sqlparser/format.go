@@ -69,7 +69,7 @@ func (m *MetadataTable) ToStructFormat(tagField string) (b string) {
 	for i := range m.Fields {
 		b += fmt.Sprintf("\t%v %v `%v:%v%v%v`\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), tagField, `"`, m.Fields[i].Name, `"`)
 	}
-	b += "}\n"
+	b += "}"
 	return
 }
 
