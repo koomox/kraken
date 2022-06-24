@@ -78,6 +78,6 @@ func (m *MetadataTable) ToStructCompareFormat(src, dst, funcName string) (b stri
 	for i := range m.Fields {
 		b += fmt.Sprintf("\tif %v.%v != %v.%v {\n\t\treturn false\n\t}\n", src, m.Fields[i].ToUpperCase(), dst, m.Fields[i].ToUpperCase())
 	}
-	b += "\treturn true\n}\n"
+	b += "\treturn true\n}"
 	return
 }

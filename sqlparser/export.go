@@ -21,6 +21,7 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 	commandImport := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", pkgName, pkgName)
 	commonImport := fmt.Sprintf("import (\n\t\"database/sql\"\n\t\"%s/component/database\"\n\t\"%s/component/mysql\"\n)", pkgName, pkgName)
 	storeImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s/component/database\"\n\t\"sync\"\n)", pkgName, pkgName)
+	compare := fmt.Sprintf("package %v\n\n", pkgName)
 	values := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
 	parsetIntFormat := "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
 	parsetInt64Format := "func ParseInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
@@ -29,9 +30,10 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 	updateTickerFormat := "func UpdateTicker(updated_at string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > \"%v\"`, table, updated_at)\n}"
 	values += "\n\nconst (\n"
 	structArray := []string{}
+	compareArray := []string{}
 
 	count := 0
-	ch := make(chan error, 3)
+	ch := make(chan error, 4)
 	for i := range source.Tables {
 		if source.Tables[i].Name == "" {
 			continue
@@ -40,6 +42,7 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 		structArray = append(structArray, source.Tables[i].ToStructFormat("json"))
 		tableName := fmt.Sprintf("%s.%sTable", pkgName, source.Tables[i].ToUpperCase())
 		values += fmt.Sprintf("\t%sTable=\"%s\"\n", source.Tables[i].ToUpperCase(), source.Tables[i].Name)
+		compareArray = append(compareArray, source.Tables[i].ToStructCompareFormat("s", "d", "Compare"))
 		structName := fmt.Sprintf("%s.%s", pkgName, source.Tables[i].ToUpperCase())
 		middleName := source.Tables[i].ToLowerCase()
 		commandFileName := path.Join(baseDir, pkgName, middleName, commandFile)
@@ -86,6 +89,9 @@ func ExportCrudFormatFile(pkgName, commandFile, commonFile, storeFile, baseDir s
 	values += strings.Join(structArray, "\n\n")
 	if err := WriteFile(values, path.Join(baseDir, pkgName, commonFile)); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", commonFile, err)
+	}
+	if err := WriteFile(compare + strings.Join(compareArray, "\n\n"), path.Join(baseDir, pkgName, "compare.go")); err != nil {
+		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", "compare.go", err)
 	}
 
 	for i := 0; i < count; i++ {
@@ -137,18 +143,6 @@ func ExportStorageFormatFile(pkgName, importHead, importPrefix, structName, fiel
 	element += ToNewStorageFuncFormat(newFunc, newFunc, structName, data) + "\n\n"
 	element += ToUpdateStorageFuncFormat(updateFunc, structName, data) + "\n\n"
 	return WriteFile(element, fileName)
-}
-
-func ExportStructCompareFormatFile(pkgName, src, dst, funcName, fileName string, data []*MetadataTable) error {
-	values := fmt.Sprintf("package %v\n\n", pkgName)
-	for i := range data {
-		if data[i].Name == "" {
-			continue
-		}
-		values += data[i].ToStructCompareFormat(src, dst, funcName) + "\n\n"
-	}
-
-	return WriteFile(values, fileName)
 }
 
 func ExportFile(filename, tagField string, data []*MetadataTable) error {
