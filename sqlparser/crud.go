@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (m *MetadataTable) ToInsertFormat(funcName, structPrefix, structName string) (b string) {
+func (m *MetadataTable) ToInsertSQLFormat(funcName, structPrefix, structName string) (b string) {
 	var keys []string
 	var values []string
 	var elements []string
@@ -22,7 +22,7 @@ func (m *MetadataTable) ToInsertFormat(funcName, structPrefix, structName string
 	return
 }
 
-func (m *MetadataTable) ToUpdateFormat(funcName string) (b string) {
+func (m *MetadataTable) ToUpdateSQLFormat(funcName string) (b string) {
 	var args []string
 	var keys []string
 	var format []string
@@ -46,7 +46,7 @@ func (m *MetadataTable) ToUpdateFormat(funcName string) (b string) {
 	return
 }
 
-func (m *MetadataTable) ToRemoveFormat(funcName string) (b string) {
+func (m *MetadataTable) ToRemoveSQLFormat(funcName string) (b string) {
 	var args []string
 	var keys []string
 	var format []string
@@ -80,7 +80,7 @@ func (m *MetadataTable) ToRemoveFormat(funcName string) (b string) {
 	return
 }
 
-func (m *MetadataTable) ToQueryFormat(funcName, structPrefix, structName string) (b string) {
+func (m *MetadataTable) ToQuerySQLFormat(funcName, structPrefix, structName string) (b string) {
 	b = fmt.Sprintf("func %s(command string) (%s []*%s) {\n", funcName, structPrefix, structName)
 	b += "\tdata, length := mysql.Query(command)\n"
 	b +="\tif data == nil || length <= 0 {\n\t\treturn\n\t}\n"
@@ -90,7 +90,7 @@ func (m *MetadataTable) ToQueryFormat(funcName, structPrefix, structName string)
 	return
 }
 
-func (m *MetadataTable) ToParserFormat(funcName, prefixName, structName, databasePrefix string) (b string) {
+func (m *MetadataTable) ToParserSQLFormat(funcName, prefixName, structName, databasePrefix string) (b string) {
 	b = fmt.Sprintf("func %s(%s map[string]string) *%s {\n", funcName, prefixName, structName)
 	b += fmt.Sprintf("\treturn &%s{\n", structName)
 	for i := range m.Fields {
@@ -107,7 +107,7 @@ func (m *MetadataTable) ToParserFormat(funcName, prefixName, structName, databas
 	return
 }
 
-func (m *MetadataTable) ToSelectFuncFormat(prefixFunc string) (b string) {
+func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 	var idx []string
 	var ids []string
 	var format []string
@@ -145,7 +145,7 @@ func (m *MetadataTable) ToSelectFuncFormat(prefixFunc string) (b string) {
 	return
 }
 
-func (m *MetadataTable) ToPublicSubCrudFormat(prefixFunc, queryFunc, subPrefixFunc, structName, tableName string) (b string) {
+func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFunc, structName, tableName string) (b string) {
 	var idx []string
 	var ids []string
 	var args []string
