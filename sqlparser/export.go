@@ -105,6 +105,7 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, rootDir string, source *Database) {
 	store := "store"
 	Store := "Store"
+	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, component, database)
 	values := fmt.Sprintf("package %s\n\nimport (\n\t\"encoding/json\"\n", pkgName)
 	values += fmt.Sprintf("\t\"%s/common/cache\"\n\t\"%s/%s/%s\"\n", modName, modName, component, database)
 
@@ -112,10 +113,13 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	var structArray []string
 	var storeArray []string
 	var updateArray []string
+	count := 0
+	ch := make(chan error, 1)
 	for i := range source.Tables {
 		if source.Tables[i].Name == "" {
 			continue
 		}
+		count += 1
 		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, component, database, source.Tables[i].ToLowerCase()))
 		structArray = append(structArray, fmt.Sprintf("\t%s *%s.%s\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), Store))
 		updateArray = append(updateArray, fmt.Sprintf("\t%s.%s.UpdateTicker(datetime)\n", store, source.Tables[i].ToUpperCase()))
@@ -128,6 +132,14 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 		default:
 			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithStringComparator"))
 		}
+
+		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
+		go func(pkgName, importHead, fromPrefix, selectPrefix, databasePrefix, storePrefix, StorePrefix, currentPrefix, fileName string, data *MetadataTable) {
+			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
+			b += data.ToSelectStorageFuncFormat(fromPrefix, selectPrefix, databasePrefix, storePrefix, StorePrefix, currentPrefix)
+
+			ch <- WriteFile(b, fileName)
+		}(pkgName, importHead, "From", "By", database, "store", "Store", "current", fName, source.Tables[i])
 	}
 
 	values += strings.Join(importArray, "")
@@ -137,6 +149,7 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	values += "\tFix []interface{}\n}\n\n"
 	values += fmt.Sprintf("var (\n\tcurrent = &%s{}\n)\n\n", Store)
 	values += "func Initial() {\n\tcurrent = NewStore()\n}\n\n"
+	values += fmt.Sprintf("func Background() *%s {\n\treturn current\n}\n\n", Store)
 	values += fmt.Sprintf("func NewStore() *%s {\n", Store)
 	values += fmt.Sprintf("\treturn &%s{\n", Store)
 	values += strings.Join(storeArray, "")
@@ -148,6 +161,13 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	filename := path.Join(rootDir, pkgName, commonFile)
 	if err := WriteFile(values, filename); err != nil {
 		fmt.Printf("[%s]ExportStorageFormatFile: %v\n", filename, err)
+	}
+
+	for i := 0; i < count; i++ {
+		select {
+		case err := <-ch:
+			fmt.Printf("[%d]ExportStorageFormatFile: %v\n", i+1, err)
+		}
 	}
 }
 

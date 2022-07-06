@@ -1,122 +1,39 @@
 package sqlparser
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 )
 
-const (
-	importStorageFormat      = "aW1wb3J0ICgKCSJlbmNvZGluZy9qc29uIgppbXBvcnRGaWVsZAoJInN5bmMiCgkidGltZSIKKQ"
-	structStorageFormat      = "dHlwZSBzdHJ1Y3ROYW1lIHN0cnVjdCB7CglzeW5jLlJXTXV0ZXgKc3RydWN0RmllbGQKCUZpeCBbXWludGVyZmFjZXt9Cn0"
-	newStorageFuncFormat     = "ZnVuYyBmdW5jTmFtZSgpIChzdG9yZSAqc3RydWN0TmFtZSkgewoJc3RvcmUgPSAmc3RydWN0TmFtZXsKY29udGVudEZpZWxkCgl9CgoJcmV0dXJuCn0"
-	updateStorageFuncFormat  = "ZnVuYyAoc3RvcmUgKnN0cnVjdE5hbWUpIGZ1bmNOYW1lKGRhdGV0aW1lIHN0cmluZykgewpjb250ZW50RmllbGQKfQ"
-	initialStorageFuncFormat = "dmFyICgKCWN1cnJlbnQgPSAmU3RvcmV7fQopCgpmdW5jIEluaXRpYWwoKSB7CgljdXJyZW50ID0gTmV3U3RvcmUoKQp9"
-	selectStorageFuncFormat  = "ZnVuYyAoc3RvcmUgKlN0b3JlKSBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBzdHJ1Y3ROYW1lIHsKICAgIHJldHVybiBzdG9yZS5zdHJ1Y3RGaWVsZC5zdWJGdW5jKGZpZWxkTmFtZSkKfQoKZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSBzdHJ1Y3ROYW1lIHsKICAgIHJldHVybiBjdXJyZW50LmZ1bmNOYW1lKGZpZWxkTmFtZSkKfQ"
-)
-
-func toImportStorageFormat(importField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(importStorageFormat)
-	return strings.Replace(string(fieldFormat), "importField", importField, -1)
-}
-
-func ToImportStorageFormat(importHead, importPrefix string, data []*MetadataTable) (b string) {
-	var elements []string
-	for i, _ := range data {
-		elements = append(elements, "\t"+fmt.Sprintf(`"%v/%v"`, importPrefix, data[i].ToLowerCase()))
-	}
-	return toImportStorageFormat(importHead + "\n" + strings.Join(elements, "\n"))
-}
-
-func toStructStorageFormat(structName, structField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(structStorageFormat)
-	b = strings.Replace(string(fieldFormat), "structName", structName, -1)
-	return strings.Replace(b, "structField", structField, -1)
-}
-
-func ToStructStorageFormat(structName, fieldSuffix string, data []*MetadataTable) (b string) {
-	var elements []string
-	for i, _ := range data {
-		if data[i].PrimaryKeyLen() != 1 {
-			continue
+func (m *MetadataTable) ToSelectStorageFuncFormat(fromPrefix, selectPrefix, databasePrefix, storePrefix, StorePrefix, currentPrefix string) (b string) {
+	structName := fmt.Sprintf("%s.%s", databasePrefix, m.ToUpperCase())
+	var idx []string
+	var ids []string
+	var args []string
+	keys := m.PrimaryKey()
+	switch len(keys) {
+	case 1:
+		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, keys[0].ToUpperCase())
+		b = fmt.Sprintf("func (%s *%s) %s(%s %s) *%s {\n\treturn %s.%s.%s%s(%s)\n}", storePrefix, StorePrefix, funcName, keys[0].ToLowerCase(), keys[0].TypeOf(), structName, storePrefix, m.ToUpperCase(), selectPrefix, keys[0].ToUpperCase(), keys[0].ToLowerCase())
+		b += fmt.Sprintf("\n\nfunc %s(%s %s) *%s {\n\treturn %s.%s(%s)\n}", funcName, keys[0].ToLowerCase(), keys[0].TypeOf(), structName, currentPrefix, funcName, keys[0].ToLowerCase())
+	default:
+		for _, v := range keys {
+			idx = append(idx, fmt.Sprintf("%s", v.ToUpperCase()))
+			ids = append(ids, fmt.Sprintf("%s %s", v.ToLowerCase(), v.TypeOf()))
+			args = append(args, v.ToLowerCase())
 		}
-		elements = append(elements, "\t"+fmt.Sprintf(`%v *%v%v`, data[i].ToUpperCase(), data[i].ToLowerCase(), fieldSuffix))
-	}
-	return toStructStorageFormat(structName, strings.Join(elements, "\n"))
-}
-
-func toNewStorageFuncFormat(funcName, structName, contentField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(newStorageFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	return strings.Replace(b, "contentField", contentField, -1)
-}
-
-func ToNewStorageFuncFormat(funcName, newFunc, structName string, data []*MetadataTable) (b string) {
-	var elements []string
-	for i, _ := range data {
-		if data[i].PrimaryKeyLen() != 1 {
-			continue
-		}
-		elements = append(elements, fmt.Sprintf("\t\t%v:%v.%v(bucket.NewStore()),", data[i].ToUpperCase(), data[i].ToLowerCase(), newFunc))
-	}
-	return toNewStorageFuncFormat(funcName, structName, strings.Join(elements, "\n"))
-}
-
-func toUpdateStorageFuncFormat(funcName, structName, contentField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateStorageFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	return strings.Replace(b, "contentField", contentField, -1)
-}
-
-func ToUpdateStorageFuncFormat(funcName, structName string, data []*MetadataTable) (b string) {
-	var elements []string
-	for i, _ := range data {
-		if data[i].PrimaryKeyLen() != 1 {
-			continue
-		}
-		elements = append(elements, fmt.Sprintf("\tstore.%v.%v(datetime)", data[i].ToUpperCase(), funcName))
-	}
-	return toUpdateStorageFuncFormat(funcName, structName, strings.Join(elements, "\n"))
-}
-
-func ToInitialStorageFuncFormat() (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(initialStorageFuncFormat)
-	return string(fieldFormat)
-}
-
-func toSelectStorageFuncFormat(subFunc, structField, fieldName, fieldType, funcName, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectStorageFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "subFunc", subFunc, -1)
-	b = strings.Replace(b, "structField", structField, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	return strings.Replace(b, "fieldType", fieldType, -1)
-}
-
-func (m *MetadataTable) ToSelectStorageFuncFormat(selectPrefix, structPrefix string) (b string) {
-	structName := "*" + structPrefix + m.ToUpperCase()
-	fieldsLen := len(m.Fields)
-	var elements []string
-	for i := 0; i < fieldsLen; i++ {
-		if !m.Fields[i].PrimaryKey && !m.Fields[i].Unique {
-			continue
-		}
-		subFunc := selectPrefix + m.Fields[i].ToUpperCase()
-		funcName := "From" + m.ToUpperCase() + selectPrefix + m.Fields[i].ToUpperCase()
-		fieldType := ""
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			fieldType = "int"
-		case "BIGINT":
-			fieldType = "int64"
-		default:
-			fieldType = "string"
-		}
-		elements = append(elements, toSelectStorageFuncFormat(subFunc, m.ToUpperCase(), m.Fields[i].Name, fieldType, funcName, structName))
+		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, strings.Join(idx, "And"))
+		b = fmt.Sprintf("func (%s *%s) %s(%s) *%s {\n\treturn %s.%s.%s%s(%s)\n}", storePrefix, StorePrefix, funcName, strings.Join(ids, ", "), structName, storePrefix, m.ToUpperCase(), selectPrefix, strings.Join(idx, "And"), strings.Join(args, ", "))
+		b += fmt.Sprintf("\n\nfunc %s(%s) *%s {\n\treturn %s.%s(%s)\n}", funcName, strings.Join(ids, ", "), structName, currentPrefix, funcName, strings.Join(args, ", "))
 	}
 
-	return strings.Join(elements, "\n\n")
+	for i := range m.Fields {
+		if !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
+			funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase())
+			b += fmt.Sprintf("\n\nfunc (%s *%s) %s(%s %s) *%s {\n\treturn %s.%s.%s%s(%s)\n}", storePrefix, StorePrefix, funcName, m.Fields[i].ToLowerCase(), m.Fields[i].TypeOf(), structName, storePrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].ToLowerCase())
+			b += fmt.Sprintf("\n\nfunc %s(%s %s) *%s {\n\treturn %s.%s(%s)\n}", funcName, m.Fields[i].ToLowerCase(), m.Fields[i].TypeOf(), structName, currentPrefix, funcName, m.Fields[i].ToLowerCase())
+		}
+	}
+
+	return
 }
