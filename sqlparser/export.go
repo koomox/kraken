@@ -185,15 +185,35 @@ func ExportForntendParseFormatFile(pkgName, importHead, funcPrefix, tagName, fil
 	return WriteFile(element, fileName)
 }
 
-func ExportModelFormatFile(pkgName, importHead, createFunc, compreFunc, updateFunc, removeFunc, whereFunc, selectFunc, structPrefix, fileName string, data *MetadataTable) error {
-	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToCreateModelFuncFormat(createFunc, structPrefix) + "\n\n"
-	element += data.ToCompareModelFuncFormat(compreFunc, structPrefix) + "\n\n"
-	element += data.ToUpdateModelFuncFormat(updateFunc, updateFunc) + "\n\n"
-	element += data.ToRemoveModelFuncFormat(removeFunc, removeFunc) + "\n\n"
-	element += data.ToWhereModelFuncFormat(whereFunc, structPrefix) + "\n\n"
-	element += data.ToSelectModelFuncFormat(selectFunc, structPrefix)
-	return WriteFile(element, fileName)
+func ExportModelFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
+	count := 0
+	ch := make(chan error, 1)
+	for i := range source.Tables {
+		if source.Tables[i].Name == "" {
+			continue
+		}
+		count += 1
+		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database, source.Tables[i].ToLowerCase(), modName, component, database)
+		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, updateFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable){
+			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
+			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix) + "\n\n"
+			b += data.ToCompareModelFuncFormat(compareFunc, "element", databasePrefix) + "\n\n"
+			b += data.ToUpdateModelFuncFormat(updateFunc) + "\n\n"
+			b += data.ToRemoveModelFuncFormat(removeFunc) + "\n\n"
+			b += data.ToWhereModelFuncFormat(whereFunc, databasePrefix) + "\n\n"
+			b += data.ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix)
+
+			ch <- WriteFile(b, fileName)
+		}(pkgName, importHead, "Create", "Insert", "Compare", "Update", "Remove", "Where", "From", "By", database, fName, source.Tables[i])
+	}
+
+	for i := 0; i < count; i++ {
+		select {
+		case err := <-ch:
+			fmt.Printf("[%d]ExportModelFormatFile: %v\n", i+1, err)
+		}
+	}
 }
 
 func ExportFile(filename, tagField string, data []*MetadataTable) error {

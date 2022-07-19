@@ -1,186 +1,82 @@
 package sqlparser
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 )
 
-const (
-	createModelFuncFormat     = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CglyZXR1cm4gZmllbGROYW1lLkluc2VydCgmc3RydWN0TmFtZXsKY29udGVudEZpZWxkCgl9KQp9"
-	compareModelFuncFormat    = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCwgZWxlbWVudCAqc3RydWN0TmFtZSkgc3RyaW5nIHsKICAgIHZhciBjb21tYW5kIFtdc3RyaW5nCmNvbnRlbnRGaWVsZAogICAgaWYgY29tbWFuZCA9PSBuaWwgfHwgbGVuKGNvbW1hbmQpID09IDAgewogICAgICAgIHJldHVybiAiIgogICAgfQoKICAgIHJldHVybiBzdHJpbmdzLkpvaW4oY29tbWFuZCwgIiwgIikKfQ"
-	compareModelSubFuncFormat = "ICAgIGlmIGZpZWxkTmFtZSAhPSBlbGVtZW50LnN0cnVjdEZpZWxkIHsKICAgICAgICBjb21tYW5kID0gYXBwZW5kKGNvbW1hbmQsIGZtdC5TcHJpbnRmKGBmaWVsZE5hbWU9ZmllbGRUeXBlYCwgZmllbGROYW1lKSkKICAgIH0"
-	updateModelFuncFormat     = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CmNvbnRlbnRGaWVsZAogICAgcmV0dXJuIGZpZWxkTmFtZS51cGRhdGVGdW5jKHBhcmFtc1VwZGF0ZSkKfQ"
-	updateModelSubFuncFormat  = "CWNvbW1hbmQgKz0gZm10LlNwcmludGYoYCwgZmllbGROYW1lPWZpZWxkVHlwZWAsIGZpZWxkTmFtZSk"
-	removeModelFuncFormat     = "ZnVuYyBmdW5jTmFtZShwYXJhbXNGaWVsZCkgKHNxbC5SZXN1bHQsIGVycm9yKSB7CglyZXR1cm4gc3ViRnVuYyh2YWx1ZXNGaWVsZCkKfQ"
-	whereModelFuncFormat      = "ZnVuYyBmdW5jTmFtZShjb21tYW5kIHN0cmluZykgc3RydWN0TmFtZSB7CglyZXR1cm4gc3ViRnVuYyhjb21tYW5kKQp9"
-	selectModelFuncFormat     = "ZnVuYyBmdW5jTmFtZShmaWVsZE5hbWUgZmllbGRUeXBlKSByZXN1bHRGaWVsZCB7CglyZXR1cm4gc3RydWN0RmllbGQuc3ViRnVuYyhmaWVsZE5hbWUpCn0"
-)
-
-func toCreateModelFuncFormat(funcName, structName, paramsField, fieldName, contentField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(createModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	b = strings.Replace(b, "paramsField", paramsField, -1)
-	return strings.Replace(b, "contentField", contentField, -1)
-}
-
-func (m *MetadataTable) ToCreateModelFuncFormat(funcPrefix, structPrefix string) (b string) {
-	structName := structPrefix + m.ToUpperCase()
-	funcName := funcPrefix + m.ToUpperCase()
+func (m *MetadataTable) ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix string) (b string) {
+	var args []string
+	var params string
 	fieldsLen := len(m.Fields)
-	var params []string
-	var elements []string
-	createdBy := ""
-	createdAt := ""
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].AutoIncrment {
+		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
 		}
-		switch m.Fields[i].Name {
-		case "deleted":
-			elements = append(elements, fmt.Sprintf("\t\t%v: 0,", m.Fields[i].ToUpperCase()))
-		case "created_by", "updated_by":
-			createdBy = m.Fields[i].TypeOf()
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_by"))
-		case "created_at", "updated_at":
-			createdAt = m.Fields[i].TypeOf()
-			elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), "created_at"))
-		default:
-			if m.Fields[i].Name == m.Name {
-				params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name+"s", m.Fields[i].TypeOf()))
-				elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name+"s"))
-			} else {
-				params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-				elements = append(elements, fmt.Sprintf("\t\t%v: %v,", m.Fields[i].ToUpperCase(), m.Fields[i].Name))
-			}
-		}
+		args = append(args, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))
+		params += fmt.Sprintf("\t\t%s: %s,\n", m.Fields[i].ToUpperCase(), m.Fields[i].Name)
 	}
-	if createdBy != "" {
-		params = append(params, fmt.Sprintf("%v %v", "created_by", createdBy))
-	}
-	if createdAt != "" {
-		params = append(params, fmt.Sprintf("%v %v", "created_at", createdAt))
-	}
-
-	return toCreateModelFuncFormat(funcName, structName, strings.Join(params, ", "), m.ToLowerCase(), strings.Join(elements, "\n"))
+	b = fmt.Sprintf("func %s%s(%s) (sql.Result, error) {\n", createFunc, m.ToUpperCase(), strings.Join(args, ", "))
+	b += fmt.Sprintf("\treturn %s.%s(&%s.%s{\n", m.ToLowerCase(), insertFunc, databasePrefix, m.ToUpperCase())
+	b += params
+	b += "\t})\n}"
+	return
 }
 
-func toCompareModelFuncFormat(funcName, structName, paramsField, contentField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	b = strings.Replace(b, "paramsField", paramsField, -1)
-	return strings.Replace(b, "contentField", contentField, -1)
-}
-
-func toCompareModelSubFuncFormat(structField, fieldName, fieldType string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(compareModelSubFuncFormat)
-	b = strings.Replace(string(fieldFormat), "fieldName", fieldName, -1)
-	b = strings.Replace(b, "structField", structField, -1)
-	return strings.Replace(b, "fieldType", fieldType, -1)
-}
-
-func (m *MetadataTable) ToCompareModelFuncFormat(funcPrefix, structPrefix string) (b string) {
-	structName := structPrefix + m.ToUpperCase()
-	funcName := funcPrefix + m.ToUpperCase()
-	fieldsLen := len(m.Fields)
+func (m *MetadataTable) ToCompareModelFuncFormat(compareFunc, structPrefix, databasePrefix string) (b string) {
+	var args []string
 	var params []string
-	var elements []string
+	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
 		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
 		}
 		switch m.Fields[i].Name {
-		case "username", "created_by", "updated_by", "created_at", "updated_at":
+		case "created_by", "updated_by", "created_at", "updated_at":
 			continue
 		}
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
-			elements = append(elements, toCompareModelSubFuncFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "%v"))
-		case "BIGINT":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
-			elements = append(elements, toCompareModelSubFuncFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "%v"))
-		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
-			elements = append(elements, toCompareModelSubFuncFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, `"%v"`))
-		}
+		args = append(args, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))
+		params = append(params, fmt.Sprintf("\tif %s != %s.%s {\n\t\tcommand = append(command, fmt.Sprintf(`%s=%%v`, %s))\n\t}", m.Fields[i].Name, structPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].Name, m.Fields[i].Name))
 	}
 
-	return toCompareModelFuncFormat(funcName, structName, strings.Join(params, ", "), strings.Join(elements, "\n"))
+	b = fmt.Sprintf("func %s%s(%s, %s *%s.%s) string {\n", compareFunc, m.ToUpperCase(), strings.Join(args, ", "), structPrefix, databasePrefix, m.ToUpperCase())
+	b += "\tvar command []string\n"
+	b += strings.Join(params, "\n")
+	b += "\n\tif command == nil || len(command) == 0 {\n\t\treturn \"\"\n\t}\n\n\treturn strings.Join(command, \", \")\n}"
+	return
 }
 
-func toUpdateModelFuncFormat(funcName, paramsField, fieldName, updateFunc, contentField, paramsUpdate string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "paramsField", paramsField, -1)
-	b = strings.Replace(b, "contentField", contentField, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	b = strings.Replace(b, "updateFunc", updateFunc, -1)
-	return strings.Replace(b, "paramsUpdate", paramsUpdate, -1)
-}
-
-func toUpdateModelSubFuncFormat(fieldName, fieldType string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(updateModelSubFuncFormat)
-	b = strings.Replace(string(fieldFormat), "fieldName", fieldName, -1)
-	return strings.Replace(b, "fieldType", fieldType, -1)
-}
-
-func (m *MetadataTable) ToUpdateModelFuncFormat(funcPrefix, updateFunc string) (b string) {
-	funcName := funcPrefix + m.ToUpperCase()
-	fieldsLen := len(m.Fields)
+func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
+	var args []string
 	var params []string
-	var elements []string
-	var param string
 	var keys []string
+	funcName := fmt.Sprintf("%s%s", updateFunc, m.ToUpperCase())
+	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].Name {
 		case "updated_by", "updated_at":
+			params = append(params, fmt.Sprintf("\tcommand += fmt.Sprintf(`, %s=%%v`, %s)", m.Fields[i].Name, m.Fields[i].Name))
 		default:
 			if !m.Fields[i].PrimaryKey {
 				continue
 			}
 			keys = append(keys, m.Fields[i].Name)
 		}
-
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
-			elements = append(elements, toUpdateModelSubFuncFormat(m.Fields[i].Name, "%v"))
-		case "BIGINT":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
-			elements = append(elements, toUpdateModelSubFuncFormat(m.Fields[i].Name, "%v"))
-		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
-			elements = append(elements, toUpdateModelSubFuncFormat(m.Fields[i].Name, `"%v"`))
-		}
-	}
-	if params == nil || len(params) == 0 {
-		param = "command string"
-	} else {
-		param = strings.Join(params, ", ") + ", command string"
+		args = append(args, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))
 	}
 
-	return toUpdateModelFuncFormat(funcName, param, m.ToLowerCase(), updateFunc, strings.Join(elements, "\n"), fmt.Sprintf("command, %v", strings.Join(keys, ", ")))
+	b = fmt.Sprintf("func %s(%s, command string) (sql.Result, error) {\n", funcName, strings.Join(args, ", "))
+	b += strings.Join(params, "\n")
+	b += fmt.Sprintf("\n\treturn %s.%s(command, %s)\n}", m.ToLowerCase(), updateFunc, strings.Join(keys, ", "))
+
+	return
 }
 
-func toRemoveModelFuncFormat(funcName, paramsField, subFunc, valuesField string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(removeModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "paramsField", paramsField, -1)
-	b = strings.Replace(b, "subFunc", subFunc, -1)
-	return strings.Replace(b, "valuesField", valuesField, -1)
-}
-
-func (m *MetadataTable) ToRemoveModelFuncFormat(funcPrefix, removeFunc string) (b string) {
-	subFunc := m.ToLowerCase() + "." + removeFunc
-	funcName := funcPrefix + m.ToUpperCase()
-	fieldsLen := len(m.Fields)
-	var params []string
-	var values []string
-	for i := 0; i < fieldsLen; i++ {
+func (m *MetadataTable) ToRemoveModelFuncFormat(removeFunc string) (b string) {
+	var keys []string
+	var args []string
+	funcName := fmt.Sprintf("%s%s", removeFunc, m.ToUpperCase())
+	for i := range m.Fields {
 		switch m.Fields[i].Name {
 		case "updated_by", "updated_at":
 		default:
@@ -188,62 +84,53 @@ func (m *MetadataTable) ToRemoveModelFuncFormat(funcPrefix, removeFunc string) (
 				continue
 			}
 		}
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int"))
-		case "BIGINT":
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "int64"))
-		default:
-			params = append(params, fmt.Sprintf("%v %v", m.Fields[i].Name, "string"))
+		keys = append(keys, m.Fields[i].Name)
+		args = append(args, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))
+	}
+	b = fmt.Sprintf("func %s(%s) (sql.Result, error) {\n\treturn %s.%s(%s)\n}", funcName, strings.Join(args, ", "), m.ToLowerCase(), removeFunc, strings.Join(keys, ", "))
+
+	return
+}
+
+func (m *MetadataTable) ToWhereModelFuncFormat(whereFunc, databasePrefix string) (b string) {
+	b = fmt.Sprintf("func %s%s(command string) []*%s.%s {\n", whereFunc, m.ToUpperCase(), databasePrefix, m.ToUpperCase())
+	b += fmt.Sprintf("\treturn %s.%s(command)\n}", m.ToLowerCase(), whereFunc)
+	return
+}
+
+func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix string) (b string) {
+	structName := fmt.Sprintf("%s.%s", databasePrefix, m.ToUpperCase())
+	var idx []string
+	var ids []string
+	var args []string
+	var params []string
+	keys := m.PrimaryKey()
+	switch len(keys) {
+	case 1:
+		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, keys[0].ToUpperCase())
+		params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, keys[0].Name, keys[0].TypeOf(), structName, m.ToLowerCase(), selectPrefix, keys[0].ToUpperCase(), keys[0].Name))
+	default:
+		for _, v := range keys {
+			idx = append(idx, fmt.Sprintf("%s", v.ToUpperCase()))
+			ids = append(ids, fmt.Sprintf("%s %s", v.ToLowerCase(), v.TypeOf()))
+			args = append(args, v.ToLowerCase())
 		}
-		values = append(values, m.Fields[i].Name)
+		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, strings.Join(idx, "And"))
+		params = append(params, fmt.Sprintf("func %s(%s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, strings.Join(ids, ", "), structName, m.ToLowerCase(), selectPrefix, strings.Join(idx, "And"), strings.Join(args, ", ")))
 	}
 
-	return toRemoveModelFuncFormat(funcName, strings.Join(params, ", "), subFunc, strings.Join(values, ", "))
-}
-
-func toSelectModelFuncFormat(funcName, fieldName, fieldType, resultField, structField, subFunc string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(selectModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "fieldName", fieldName, -1)
-	b = strings.Replace(b, "fieldType", fieldType, -1)
-	b = strings.Replace(b, "resultField", resultField, -1)
-	b = strings.Replace(b, "structField", structField, -1)
-	return strings.Replace(b, "subFunc", subFunc, -1)
-}
-
-func (m *MetadataTable) ToSelectModelFuncFormat(funcPrefix, structPrefix string) (b string) {
-	var elements []string
+	
 	for i := range m.Fields {
-		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique && !m.Fields[i].PrimaryKey {
+		if m.Fields[i].PrimaryKey {
 			continue
 		}
-		funcName := "From" + m.ToUpperCase() + funcPrefix + m.Fields[i].ToUpperCase()
-		resultField := "[]*" + structPrefix + m.ToUpperCase()
-		subFunc := funcPrefix + m.Fields[i].ToUpperCase()
-		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			elements = append(elements, toSelectModelFuncFormat(funcName, m.Fields[i].Name, "int", resultField, m.ToLowerCase(), subFunc))
-		case "BIGINT":
-			elements = append(elements, toSelectModelFuncFormat(funcName, m.Fields[i].Name, "int64", resultField, m.ToLowerCase(), subFunc))
-		default:
-			elements = append(elements, toSelectModelFuncFormat(funcName, m.Fields[i].Name, "string", resultField, m.ToLowerCase(), subFunc))
+		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
+			continue
 		}
+
+		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase())
+		params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), structName, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].Name))
 	}
 
-	return strings.Join(elements, "\n\n")
-}
-
-func toWhereModelFuncFormat(funcName, subFunc, structName string) (b string) {
-	fieldFormat, _ := base64.RawStdEncoding.DecodeString(whereModelFuncFormat)
-	b = strings.Replace(string(fieldFormat), "funcName", funcName, -1)
-	b = strings.Replace(b, "structName", structName, -1)
-	return strings.Replace(b, "subFunc", subFunc, -1)
-}
-
-func (m *MetadataTable) ToWhereModelFuncFormat(funcPrefix, structPrefix string) (b string) {
-	subFunc := m.ToLowerCase() + "." + funcPrefix
-	structName := "[]*" + structPrefix + m.ToUpperCase()
-	funcName := funcPrefix + m.ToUpperCase()
-	return toWhereModelFuncFormat(funcName, subFunc, structName)
+	return strings.Join(params, "\n\n")
 }
