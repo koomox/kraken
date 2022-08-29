@@ -171,18 +171,59 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	}
 }
 
-func ExportFrontendColumnsFormatFile(head, foot, columnsName string, fileName string, data *MetadataTable) error {
-	element := head + "\n\n"
-	element += data.ToFrontendColumnsFormat(columnsName) + "\n\n"
-	element += foot
-	return WriteFile(element, fileName)
+func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database) {
+	head := ""
+	columnsName := "columnsIndex"
+	foot := "export default columnsIndex;"
+	count := 0
+	ch := make(chan error, 1)
+	for i := range source.Tables {
+		if source.Tables[i].Name == "" {
+			continue
+		}
+		count += 1
+		fName := path.Join(rootDir, commonDir, source.Tables[i].ToLowerCase()+".js")
+		go func(head, foot, columnsName, fileName string, data *MetadataTable){
+			b := head + "\n\n"
+			b += data.ToFrontendColumnsFormat(columnsName) + "\n\n"
+			b += foot
+			ch <- WriteFile(b, fileName)
+		}(head, foot, columnsName, fName, source.Tables[i])
+	}
+	
+	for i := 0; i < count; i++ {
+		select {
+		case err := <-ch:
+			fmt.Printf("[%d]ExportFrontendColumnsFormatFile: %v\n", i+1, err)
+		}
+	}
 }
 
-func ExportForntendParseFormatFile(pkgName, importHead, funcPrefix, tagName, fileName string, data *MetadataTable) error {
-	element := "package " + pkgName + "\n\n" + importHead + "\n\n"
-	element += data.ToForntendParseFormat(funcPrefix) + "\n\n"
-	element += data.ToStructFormat(tagName)
-	return WriteFile(element, fileName)
+func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
+	count := 0
+	ch := make(chan error, 1)
+	for i := range source.Tables {
+		if source.Tables[i].Name == "" {
+			continue
+		}
+		count += 1
+		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database)
+		go func(pkgName, importHead, funcPrefix, tagName, fileName string, data *MetadataTable){
+			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
+			b += data.ToForntendParseFormat(funcPrefix) + "\n\n"
+			b += data.ToStructFormat(tagName)
+
+			ch <- WriteFile(b, fileName)
+		}(pkgName, importHead, "Parse", "json", fName, source.Tables[i])
+	}
+
+	for i := 0; i < count; i++ {
+		select {
+		case err := <-ch:
+			fmt.Printf("[%d]ExportForntendParseFormatFile: %v\n", i+1, err)
+		}
+	}
 }
 
 func ExportModelFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
