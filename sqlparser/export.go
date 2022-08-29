@@ -97,9 +97,12 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 	for i := 0; i < count; i++ {
 		select {
 		case err := <-ch:
-			fmt.Printf("[%d]ExportCrudFormatFile: %v\n", i+1, err)
+			if err != nil {
+				fmt.Printf("[error]ExportCrudFormatFile: %v\n", err.Error())
+			}
 		}
 	}
+	fmt.Printf("[success]ExportCrudFormatFile: %d\n", count)
 }
 
 func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, rootDir string, source *Database) {
@@ -166,9 +169,12 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	for i := 0; i < count; i++ {
 		select {
 		case err := <-ch:
-			fmt.Printf("[%d]ExportStorageFormatFile: %v\n", i+1, err)
+			if err != nil {
+				fmt.Printf("[error]ExportStorageFormatFile: %v\n", err)
+			}
 		}
 	}
+	fmt.Printf("[success]ExportStorageFormatFile: %d\n", count)
 }
 
 func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database) {
@@ -194,9 +200,12 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 	for i := 0; i < count; i++ {
 		select {
 		case err := <-ch:
-			fmt.Printf("[%d]ExportFrontendColumnsFormatFile: %v\n", i+1, err)
+			if err != nil {
+				fmt.Printf("[error]ExportFrontendColumnsFormatFile: %v\n", err)
+			}
 		}
 	}
+	fmt.Printf("[success]ExportFrontendColumnsFormatFile: %d\n", count)
 }
 
 func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
@@ -221,9 +230,12 @@ func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDi
 	for i := 0; i < count; i++ {
 		select {
 		case err := <-ch:
-			fmt.Printf("[%d]ExportForntendParseFormatFile: %v\n", i+1, err)
+			if err != nil {
+				fmt.Printf("[error]ExportForntendParseFormatFile: %v\n", err)
+			}
 		}
 	}
+	fmt.Printf("[success]ExportForntendParseFormatFile: %d\n", count)
 }
 
 func ExportModelFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
@@ -252,9 +264,12 @@ func ExportModelFormatFile(modName, pkgName, component, database, rootDir string
 	for i := 0; i < count; i++ {
 		select {
 		case err := <-ch:
-			fmt.Printf("[%d]ExportModelFormatFile: %v\n", i+1, err)
+			if err != nil {
+				fmt.Printf("[error]ExportModelFormatFile: %v\n", err)
+			}
 		}
 	}
+	fmt.Printf("[success]ExportModelFormatFile: %d\n", count)
 }
 
 func ExportFile(filename, tagField string, data []*MetadataTable) error {
