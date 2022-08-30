@@ -60,7 +60,7 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 
 			ch <- WriteFile(b, fileName)
 		}(middleName, commandImport, "insert", "update", "remove", "query", "parser", "by", "set", "element", structName, pkgName, commandFileName, source.Tables[i])
-		go func(pkgName, importHead, InsertFunc, insertFunc, SelectFunc, selectFunc, UpdateFunc, updateFunc, UpdateTickerFunc, RemoveFunc, removeFunc, WhereFunc, ByFunc, byFunc, queryFunc, structName, databasePrefix, tableName, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, InsertFunc, insertFunc, SelectFunc, selectFunc, UpdateFunc, updateFunc, UpdateTickerFunc, RemoveFunc, removeFunc, WhereFunc, ByFunc, byFunc, SetFunc, setFunc, queryFunc, structName, databasePrefix, tableName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToInsertCrudFormat(InsertFunc, insertFunc, "element", structName, tableName) + "\n\n"
 			b += data.ToSelectCrudFormat(SelectFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, SelectFunc), structName, tableName) + "\n\n"
@@ -69,9 +69,10 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 			b += data.ToRemoveCrudFormat(RemoveFunc, removeFunc, tableName) + "\n\n"
 			b += data.ToWhereCrudFormat(WhereFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, WhereFunc), structName, tableName) + "\n\n"
 			b += data.ToSubSelectCrudFormat(ByFunc, queryFunc, byFunc, structName, tableName)
+			b += data.ToSetCrudFormat(SetFunc, setFunc, tableName) + "\n\n"
 
 			ch <- WriteFile(b, fileName)
-		}(middleName, commonImport, "Insert", "insert", "Select", "select", "Update", "update", "UpdateTicker", "Remove", "remove", "Where", "By", "by", "query", structName, pkgName, tableName, commonFileName, source.Tables[i])
+		}(middleName, commonImport, "Insert", "insert", "Select", "select", "Update", "update", "UpdateTicker", "Remove", "remove", "Where", "By", "by", "Set", "set", "query", structName, pkgName, tableName, commonFileName, source.Tables[i])
 		go func(pkgName, importHead, newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName string, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName)

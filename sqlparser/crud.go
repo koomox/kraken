@@ -302,3 +302,47 @@ func (m *MetadataTable) ToUpdateTickerCrudFormat(funcName, queryFunc, updateTick
 	b += fmt.Sprintf("\treturn %s(%s(updated_at, %s))\n}", queryFunc, updateTickerFunc, tableName)
 	return
 }
+
+func (m *MetadataTable) ToSetCrudFormat(funcPrefix, setPrefix, tableName string) (b string) {
+	var args []string
+	var keys []string
+	var upArgs []string
+	var upKeys []string
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at":
+			upKeys = append(upKeys, m.Fields[i].Name)
+			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+		default:
+			if m.Fields[i].PrimaryKey {
+				keys = append(keys, m.Fields[i].Name)
+				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+			}
+		}
+	}
+
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at", "created_by", "created_at":
+			continue
+		default:
+			if m.Fields[i].PrimaryKey {
+				continue
+			}
+		}
+		funcName := funcPrefix + m.Fields[i].ToUpperCase()
+		setFunc := setPrefix + m.Fields[i].ToUpperCase()
+		b += "\n"
+		switch len(args) {
+		case 1:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s, %s))\n}", setFunc, m.Fields[i].Name, keys[0], strings.Join(upKeys, ", "), tableName)
+		default:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s, %s))\n}", setFunc, m.Fields[i].Name, strings.Join(keys, ", "), strings.Join(upKeys, ", "), tableName)
+		}
+		b += "\n"
+	}
+
+	return
+}
