@@ -1,49 +1,67 @@
 package sqlparser
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-func toLabelFormat(label, field, hidden, visible, writable, updateWritable, updateVisible string) (b string) {
-	return fmt.Sprintf("  {\n    label: '%s',\n    field: '%s',\n    renderType: 'Input',\n    hidden: %s,\n    visible: %s,\n    writable: %s,\n    updateWritable: %s,\n    updateVisible: %s,\n  },", label, field, hidden, visible, writable, updateWritable, updateVisible)
+type frontendField struct {
+	Label          string `json:"label"`
+	Field          string `json:"field"`
+	RenderType     string `json:"renderType"`
+	Hidden         bool   `json:"hidden"`
+	Visible        bool   `json:"visible"`
+	Writable       bool   `json:"writable"`
+	UpdateWritable bool   `json:"updateWritable"`
+	UpdateVisible  bool   `json:"updateVisible"`
 }
 
-func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) (b string) {
+func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) string {
 	fieldsLen := len(m.Fields)
 	if columnsName == "" {
 		columnsName = m.ToUpperCase()
 	}
-	var elements []string
+	var elements []*frontendField
 	for i := 0; i < fieldsLen; i++ {
+		element := &frontendField{Label: m.Fields[i].ToUpperCase(), Field: m.Fields[i].Name, RenderType: "Input"}
 		switch m.Fields[i].Name {
 		case "id", "uid", "username":
-			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "false", "false", "true", "false", "true"))
+			element.Writable = true
+			element.UpdateVisible = true
 		case "password":
-			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "true", "false", "true", "false", "false"))
+			element.Hidden = true
+			element.Writable = true
 		case "status", "deleted", "created_by", "updated_by", "created_at", "updated_at":
-			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "true", "true", "false", "false", "true"))
+			element.Hidden = true
+			element.Visible = true
+			element.UpdateVisible = true
 		default:
-			elements = append(elements, toLabelFormat(m.Fields[i].ToUpperCase(), m.Fields[i].Name, "false", "true", "true", "true", "true"))
+			element.Visible = true
+			element.Writable = true
+			element.UpdateWritable = true
+			element.UpdateVisible = true
 		}
+		elements = append(elements, element)
 	}
 
-	return fmt.Sprintf("const %s = [\n%s\n];", columnsName, strings.Join(elements, "\n"))
+	b, _ := json.MarshalIndent(elements, "", "    ")
+	return fmt.Sprintf("const %s = %s;", columnsName, string(b))
 }
 
-func (m *MetadataTable) ToForntendParseFormat(funcName, structName, element string) (b string) {
+func (m *MetadataTable) ToForntendParseFormat(funcName, structName, elementName string) (b string) {
 	fieldsLen := len(m.Fields)
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
 		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, element, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
 		case "BIGINT":
-			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, element, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
 		default:
-			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, element, m.Fields[i].ToUpperCase(), "val"))
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "val"))
 		}
 	}
 
-	return fmt.Sprintf("func %s(m map[string]interface{}) (%s *%s) {\n\t%s = &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\nreturn\n}", funcName, element, structName, element, structName, strings.Join(elements, "\n"))
+	return fmt.Sprintf("func %s(m map[string]interface{}) (%s *%s) {\n\t%s = &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\nreturn\n}", funcName, elementName, structName, elementName, structName, strings.Join(elements, "\n"))
 }
