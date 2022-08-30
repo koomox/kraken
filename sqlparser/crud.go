@@ -83,7 +83,7 @@ func (m *MetadataTable) ToRemoveSQLFormat(funcName string) (b string) {
 func (m *MetadataTable) ToQuerySQLFormat(funcName, structPrefix, structName string) (b string) {
 	b = fmt.Sprintf("func %s(command string) (%s []*%s) {\n", funcName, structPrefix, structName)
 	b += "\tdata, length := mysql.Query(command)\n"
-	b +="\tif data == nil || length <= 0 {\n\t\treturn\n\t}\n"
+	b += "\tif data == nil || length <= 0 {\n\t\treturn\n\t}\n"
 	b += "\tb := *data\n"
 	b += fmt.Sprintf("\tfor i := 0; i < length; i++ {\n\t\telement := parser(b[i])\n\t\t%s = append(%s, element)\n\t}\n", structPrefix, structPrefix)
 	b += "\treturn\n}"
@@ -145,6 +145,53 @@ func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 	return
 }
 
+func (m *MetadataTable) ToSetSQLFormat(funcPrefix string) (b string) {
+	var args []string
+	var keys []string
+	var format []string
+	var upArgs []string
+	var upKeys []string
+	var upFormat []string
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at":
+			upKeys = append(upKeys, m.Fields[i].Name)
+			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+			upFormat = append(upFormat, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
+		default:
+			if m.Fields[i].PrimaryKey {
+				keys = append(keys, m.Fields[i].Name)
+				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+				format = append(format, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
+			}
+		}
+	}
+
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at", "created_by", "created_at":
+			continue
+		default:
+			if m.Fields[i].PrimaryKey {
+				continue
+			}
+		}
+		funcName := funcPrefix + m.Fields[i].ToUpperCase()
+		b += "\n"
+		switch len(args) {
+		case 1:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s, table string) string {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %v=%v, %s WHERE %s`, table, %s, %s, %s)\n}", m.Fields[i].Name, m.Fields[i].ValueOf(), strings.Join(upFormat, ", "), format[0], m.Fields[i].Name, strings.Join(upKeys, ", "), keys[0])
+		default:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s, table string) string {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %v=%v, %s WHERE %s`, table, %s, %s, %s)\n}", m.Fields[i].Name, m.Fields[i].ValueOf(), strings.Join(upFormat, ", "), strings.Join(format, " AND "), m.Fields[i].Name, strings.Join(upKeys, ", "), strings.Join(keys, ", "))
+		}
+		b += "\n"
+	}
+
+	return
+}
+
 func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFunc, structName, tableName string) (b string) {
 	var idx []string
 	var ids []string
@@ -162,7 +209,7 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 				args = append(args, m.Fields[i].Name)
 			}
 		}
-		b += fmt.Sprintf("func %s%s(%s) []*%s {\n", prefixFunc,  strings.Join(idx, "And"), strings.Join(ids, ", "), structName)
+		b += fmt.Sprintf("func %s%s(%s) []*%s {\n", prefixFunc, strings.Join(idx, "And"), strings.Join(ids, ", "), structName)
 		b += fmt.Sprintf("\treturn %s(%s%s(%s, %s))\n}\n\n", queryFunc, subPrefixFunc, strings.Join(idx, "And"), strings.Join(args, ", "), tableName)
 	}
 
