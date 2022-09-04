@@ -250,17 +250,18 @@ func ExportModelFormatFile(modName, pkgName, component, database, rootDir string
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
 		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database, source.Tables[i].ToLowerCase(), modName, component, database)
-		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, updateFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix) + "\n\n"
 			b += data.ToCompareModelFuncFormat(compareFunc, "element", databasePrefix) + "\n\n"
 			b += data.ToUpdateModelFuncFormat(updateFunc) + "\n\n"
 			b += data.ToRemoveModelFuncFormat(removeFunc) + "\n\n"
 			b += data.ToWhereModelFuncFormat(whereFunc, databasePrefix) + "\n\n"
-			b += data.ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix)
+			b += data.ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix) + "\n"
+			b += data.ToSetModelFuncFormat(updateFunc, setFunc)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "Create", "Insert", "Compare", "Update", "Remove", "Where", "From", "By", database, fName, source.Tables[i])
+		}(pkgName, importHead, "Create", "Insert", "Compare", "Update", "Set", "Remove", "Where", "From", "By", database, fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {

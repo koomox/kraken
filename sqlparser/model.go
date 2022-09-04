@@ -119,7 +119,6 @@ func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databa
 		params = append(params, fmt.Sprintf("func %s(%s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, strings.Join(ids, ", "), structName, m.ToLowerCase(), selectPrefix, strings.Join(idx, "And"), strings.Join(args, ", ")))
 	}
 
-	
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
 			continue
@@ -133,4 +132,48 @@ func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databa
 	}
 
 	return strings.Join(params, "\n\n")
+}
+
+func (m *MetadataTable) ToSetModelFuncFormat(funcPrefix, setPrefix string) (b string) {
+	var args []string
+	var keys []string
+	var upArgs []string
+	var upKeys []string
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at":
+			upKeys = append(upKeys, m.Fields[i].Name)
+			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+		default:
+			if m.Fields[i].PrimaryKey {
+				keys = append(keys, m.Fields[i].Name)
+				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
+			}
+		}
+	}
+
+	for i := range m.Fields {
+		switch m.Fields[i].Name {
+		case "updated_by", "updated_at", "created_by", "created_at":
+			continue
+		default:
+			if m.Fields[i].PrimaryKey {
+				continue
+			}
+		}
+		funcName := fmt.Sprintf("%s%s%s%s", funcPrefix, m.ToUpperCase(), setPrefix, m.Fields[i].ToUpperCase())
+		setFunc := fmt.Sprintf("%s.%s%s", m.ToLowerCase(), setPrefix, m.Fields[i].ToUpperCase())
+		b += "\n"
+		switch len(args) {
+		case 1:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn %s(%s, %s, %s)\n}", setFunc, m.Fields[i].Name, keys[0], strings.Join(upKeys, ", "))
+		default:
+			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
+			b += fmt.Sprintf("\treturn %s(%s, %s, %s)\n}", setFunc, m.Fields[i].Name, strings.Join(keys, ", "), strings.Join(upKeys, ", "))
+		}
+		b += "\n"
+	}
+
+	return
 }

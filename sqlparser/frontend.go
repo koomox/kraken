@@ -63,5 +63,5 @@ func (m *MetadataTable) ToForntendParseFormat(funcName, structName, elementName 
 		}
 	}
 
-	return fmt.Sprintf("func %s(m map[string]interface{}) (%s *%s) {\n\t%s = &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\nreturn\n}", funcName, elementName, structName, elementName, structName, strings.Join(elements, "\n"))
+	return fmt.Sprintf("func %s(m map[string]interface{}) (%s *%s) {\n\t%s = &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn\n}", funcName, elementName, structName, elementName, structName, strings.Join(elements, "\n"))
 }

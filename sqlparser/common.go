@@ -1,8 +1,8 @@
 package sqlparser
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -81,7 +81,7 @@ type Field struct {
 	AutoIncrment bool
 }
 
-func (source *Database)ToString() (s string) {
+func (source *Database) ToString() (s string) {
 	for k := range source.Tables {
 		s += fmt.Sprintf("Table: %s\n", source.Tables[k].Name)
 		for i := range source.Tables[k].Fields {

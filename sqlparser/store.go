@@ -121,7 +121,7 @@ func (m *MetadataTable) toUpdateStoreFuncFormat(funcName, updateFunc, compareFun
 	if isVaild {
 		b += fmt.Sprintf("\n\tif %s.Updated {\n\t\t%s.%s()\n\t}\n}", structPrefix, structPrefix, mapFunc)
 	}
-	
+
 	return
 }
 
