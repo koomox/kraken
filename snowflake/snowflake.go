@@ -30,7 +30,7 @@ type Snowflake struct {
 }
 
 var (
-	current = &Snowflake{}
+	current = &Snowflake{timestamp: 0, workerid: 0, datacenterid: 0, sequence: 0}
 )
 
 func WithBackground(sf *Snowflake) *Snowflake {
