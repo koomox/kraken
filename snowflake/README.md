@@ -23,19 +23,21 @@ func main() {
 	dt, _ := time.ParseInLocation("2006-01-02 15:04:05", datetime, loc)
 	fmt.Printf("epoch: %v\n", dt.UnixNano()/1000000)
 
-	ch := make(chan int64, 1)
+	ch := make(chan bool, 1)
 	snowflake.WithBackground(snowflake.NewSnowflake(0, 0))
-	i := 0
-	for ; ; i++ {
-		go func(id int64) {
-			ch <- id
-		}(snowflake.NextID())
+	length := 10
+	for i := 0; i < length; i++ {
+		go func(i int, id int64) {
+			fmt.Printf("%d: %v\n", i, id)
+			ch <- true
+		}(i, snowflake.NextID())
 	}
 
-	for ; i != 0; i-- {
+	for i := 0; i < length; i++{
 		select {
-		case id := <-ch:
-			fmt.Printf("ID: %v\n", id)
+		case <-ch:
+		case <-time.After(time.Second):
+			fmt.Println("timeout")
 		}
 	}
 }
