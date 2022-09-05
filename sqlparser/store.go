@@ -55,7 +55,7 @@ func (m *MetadataTable) toNewStoreFuncFormat(funcName, selectFunc, structPrefix,
 		b += fmt.Sprintf("\t\t%vMapping: make(map[%v]%v),\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), m.TypeOf())
 	}
 	b += "\t\tUpdated: false,\n\t}\n"
-	b += fmt.Sprintf("\telements := query(%s())\n", selectFunc)
+	b += fmt.Sprintf("\telements := %s()\n", selectFunc)
 	b += "\tif elements == nil || len(elements) <= 0 {\n\t\treturn\n\t}\n"
 	b += "\tfor i := range elements {\n\t\telement := elements[i]\n"
 	b += fmt.Sprintf("\t\t%s.store.Put(%s, element)\n", structPrefix, m.Id())
@@ -102,7 +102,7 @@ func (m *MetadataTable) toMapStoreFuncFormat(funcName, structPrefix, structName,
 func (m *MetadataTable) toUpdateStoreFuncFormat(funcName, updateFunc, compareFunc, mapFunc, structPrefix, structName string) (b string) {
 	b = fmt.Sprintf("func (%s *%s) %s(datetime string) {\n", structPrefix, structName, funcName)
 	b += fmt.Sprintf("\t%s.Updated = false\n\t%s.Patch = nil\n", structPrefix, structPrefix)
-	b += fmt.Sprintf("\telements := query(%s(datetime))\n", updateFunc)
+	b += fmt.Sprintf("\telements := %s(datetime)\n", updateFunc)
 	b += "\tif elements == nil || len(elements) <= 0 {\n\t\treturn\n\t}\n"
 	b += "\tfor i := 0; i < len(elements); i++ {\n"
 	b += "\t\telement := elements[i]\n"
@@ -119,8 +119,9 @@ func (m *MetadataTable) toUpdateStoreFuncFormat(funcName, updateFunc, compareFun
 		}
 	}
 	if isVaild {
-		b += fmt.Sprintf("\n\tif %s.Updated {\n\t\t%s.%s()\n\t}\n}", structPrefix, structPrefix, mapFunc)
+		b += fmt.Sprintf("\n\tif %s.Updated {\n\t\t%s.%s()\n\t}", structPrefix, structPrefix, mapFunc)
 	}
+	b += "\n}"
 
 	return
 }

@@ -10,7 +10,7 @@ func (m *MetadataTable) ToCreateModelFuncFormat(createFunc, insertFunc, database
 	var params string
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
+		if m.Fields[i].AutoIncrment {
 			continue
 		}
 		args = append(args, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))

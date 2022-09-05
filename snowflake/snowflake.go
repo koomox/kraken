@@ -29,19 +29,26 @@ type Snowflake struct {
 	sequence     int64
 }
 
-func NewSnowflake(datacenterid, workerid int64) (*Snowflake, error) {
-	if datacenterid < 0 || datacenterid > datacenteridMax {
-		return nil, fmt.Errorf("datacenterid must be between 0 and %d", datacenteridMax-1)
-	}
-	if workerid < 0 || workerid > workeridMax {
-		return nil, fmt.Errorf("workerid must be between 0 and %d", workeridMax-1)
-	}
+var (
+	current = &Snowflake{}
+)
+
+func WithBackground(sf *Snowflake) *Snowflake {
+	current = sf
+	return current
+}
+
+func Background() *Snowflake {
+	return current
+}
+
+func NewSnowflake(datacenterid, workerid int64) *Snowflake {
 	return &Snowflake{
 		timestamp:    0,
-		datacenterid: datacenterid,
-		workerid:     workerid,
+		datacenterid: datacenterid & datacenteridMax,
+		workerid:     workerid & workeridMax,
 		sequence:     0,
-	}, nil
+	}
 }
 
 func (s *Snowflake) NextID() int64 {
