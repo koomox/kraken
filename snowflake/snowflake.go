@@ -75,3 +75,7 @@ func (s *Snowflake) NextID() int64 {
 	s.Unlock()
 	return r
 }
+
+func NextID() int64 {
+	return Background().NextID()
+}
