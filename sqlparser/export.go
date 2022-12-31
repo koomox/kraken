@@ -112,7 +112,7 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 	Store := "Store"
 	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, component, database)
 	values := fmt.Sprintf("package %s\n\nimport (\n\t\"encoding/json\"\n", pkgName)
-	values += fmt.Sprintf("\t\"%s/common/cache\"\n\t\"%s/%s/%s\"\n", modName, modName, component, database)
+	values += fmt.Sprintf("\t\"%s/common/memory\"\n\t\"%s/%s/%s\"\n", modName, modName, component, database)
 
 	var importArray []string
 	var structArray []string
@@ -131,11 +131,11 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 
 		switch source.Tables[i].TypeOf() {
 		case "int":
-			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithIntComparator"))
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "memory", "NewWithIntComparator"))
 		case "int64":
-			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithInt64Comparator"))
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "memory", "NewWithInt64Comparator"))
 		default:
-			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "cache", "NewWithStringComparator"))
+			storeArray = append(storeArray, fmt.Sprintf("\t\t%s:%s.NewStore(%s.%s()),\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), "memory", "NewWithStringComparator"))
 		}
 
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
