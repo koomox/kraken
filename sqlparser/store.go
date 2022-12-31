@@ -33,7 +33,7 @@ func (m *MetadataTable) ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, 
 
 func (m *MetadataTable) toStoreStructFormat() (b string) {
 	fieldsLen := len(m.Fields)
-	b = "type Store struct {\n\tsync.RWMutex\n\tstore common.Cache\n\t"
+	b = "type Store struct {\n\tsync.RWMutex\n\tstore common.Memory\n\t"
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
 			continue
@@ -46,7 +46,7 @@ func (m *MetadataTable) toStoreStructFormat() (b string) {
 
 func (m *MetadataTable) toNewStoreFuncFormat(funcName, selectFunc, structPrefix, structName string) (b string) {
 	fieldsLen := len(m.Fields)
-	b = fmt.Sprintf("func %s(c common.Cache) (%s *%s) {\n\t%s = &%s{\n", funcName, structPrefix, structName, structPrefix, structName)
+	b = fmt.Sprintf("func %s(c common.Memory) (%s *%s) {\n\t%s = &%s{\n", funcName, structPrefix, structName, structPrefix, structName)
 	b += fmt.Sprintf("\t\t%s:   c,\n", structPrefix)
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].Unique || m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
