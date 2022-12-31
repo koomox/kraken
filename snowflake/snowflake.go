@@ -30,16 +30,16 @@ type Snowflake struct {
 }
 
 var (
-	current = &Snowflake{timestamp: 0, workerid: 0, datacenterid: 0, sequence: 0}
+	global = &Snowflake{timestamp: 0, workerid: 0, datacenterid: 0, sequence: 0}
 )
 
 func WithBackground(sf *Snowflake) *Snowflake {
-	current = sf
-	return current
+	global = sf
+	return global
 }
 
 func Background() *Snowflake {
-	return current
+	return global
 }
 
 func NewSnowflake(datacenterid, workerid int64) *Snowflake {
@@ -71,7 +71,7 @@ func (s *Snowflake) NextID() int64 {
 		return 0
 	}
 	s.timestamp = now
-	r := int64((t) << timestampShift | (s.datacenterid << datacenteridShift) | (s.workerid << workeridShift) | (s.sequence))
+	r := int64((t)<<timestampShift | (s.datacenterid << datacenteridShift) | (s.workerid << workeridShift) | (s.sequence))
 	s.Unlock()
 	return r
 }
