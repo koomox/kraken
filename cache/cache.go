@@ -1,18 +1,20 @@
-package cache
+package memory
 
 import (
 	"encoding/json"
-	"github.com/koomox/kraken/redblacktree"
 	"sync"
+	"time"
+
+	"github.com/koomox/kraken/redblacktree"
 )
 
 type Store struct {
 	sync.RWMutex
-
 	tree *redblacktree.Tree
 }
 
 type Element struct {
+	Expired time.Time
 	Key     interface{}
 	Payload interface{}
 }
@@ -35,13 +37,14 @@ func NewWithInt64Comparator() *Store {
 	}
 }
 
-func (r *Store) Put(key, payload interface{}) {
+func (r *Store) Put(key, payload interface{}, ttl time.Duration) {
 	r.Lock()
 	defer r.Unlock()
 
 	r.tree.Put(key, &Element{
 		Key:     key,
 		Payload: payload,
+		Expired: time.Now().Add(ttl),
 	})
 }
 
@@ -49,10 +52,17 @@ func (r *Store) Get(key interface{}) interface{} {
 	r.RLock()
 	defer r.RUnlock()
 
-	if v, ok := r.tree.Get(key); ok {
-		return v.(*Element).Payload
+	v, ok := r.tree.Get(key)
+	if !ok {
+		return nil
 	}
-	return nil
+	element := v.(*Element)
+	if time.Since(element.Expired) > 0 {
+		r.tree.Remove(key)
+		return nil
+	}
+
+	return element.Payload
 }
 
 func (r *Store) Remove(key interface{}) {
@@ -64,22 +74,37 @@ func (r *Store) Remove(key interface{}) {
 	}
 }
 
-func (r *Store) Cleanup() {
-	r.Lock()
-	defer r.Unlock()
+func (r *Store) GetWithExpire(key interface{}) (payload interface{}, expired time.Time) {
+	r.RLock()
+	defer r.RUnlock()
 
+	v, ok := r.tree.Get(key)
+	if !ok {
+		return
+	}
+	element := v.(*Element)
+	if time.Since(element.Expired) > 0 {
+		r.tree.Remove(key)
+		return
+	}
+
+	return element.Payload, element.Expired
+}
+
+func (r *Store) Cleanup() {
 	it := r.tree.Iterator()
 	for it.Next() {
 		v := it.Value().(*Element)
-		r.tree.Remove(v.Key)
+		if time.Since(v.Expired) > 0 {
+			r.tree.Remove(v.Key)
+		}
 	}
 }
 
 func (r *Store) Values() (m []interface{}) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		m = append(m, v.Payload)
+		m = append(m, it.Value().(*Element).Payload)
 	}
 	return
 }
@@ -88,8 +113,7 @@ func (r *Store) ToJSON() ([]byte, error) {
 	var m []interface{}
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		m = append(m, v.Payload)
+		m = append(m, it.Value().(*Element).Payload)
 	}
 
 	return json.Marshal(m)
@@ -98,15 +122,15 @@ func (r *Store) ToJSON() ([]byte, error) {
 func (r *Store) CallbackFunc(callbackFunc func(interface{})) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		callbackFunc(v.Payload)
+		callbackFunc(it.Value().(*Element).Payload)
 	}
 }
 
-func (r *Store) CancelFunc(callbackFunc func(interface{})bool) {
+func (r *Store) CancelFunc(callbackFunc func(interface{}) bool) {
 	it := r.tree.Iterator()
 	for it.Next() {
-		v := it.Value().(*Element)
-		callbackFunc(v.Payload)
+		if callbackFunc(it.Value().(*Element).Payload) {
+			break
+		}
 	}
 }
