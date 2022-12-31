@@ -6,12 +6,16 @@ import (
 	"io"
 )
 
+var (
+	rander = rand.Reader
+)
+
 func NewUUID() string {
 	var (
 		uuid [16]byte
 		b    [36]byte
 	)
-	if _, err := io.ReadFull(rand.Reader, uuid[:]); err != nil {
+	if _, err := io.ReadFull(rander, uuid[:]); err != nil {
 		panic(err)
 	}
 	uuid[6] = (uuid[6] & 0x0f) | 0x40
