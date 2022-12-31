@@ -15,13 +15,9 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	store := cache.NewWithStringComparator()
-	elements := []string{
-		uuid.NewUUID(),
-		uuid.NewUUID(),
-		uuid.NewUUID(),
-		uuid.NewUUID(),
-		uuid.NewUUID(),
-		uuid.NewUUID(),
+	var elements []string
+	for i := 0; i < 10; i++ {
+		elements = append(elements, uuid.NewUUID())
 	}
 	for k, v := range elements {
 		store.Put(fmt.Sprintf("%v", k), v, 60 * time.Second)
