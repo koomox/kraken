@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"time"
 	"math/rand"
-	"github.com/koomox/kraken/memory"
+	"github.com/koomox/kraken/cache"
 )
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	store := memory.NewWithStringComparator()
+	store := cache.NewWithStringComparator()
 	elements := []string{
 		"1daf5910-dc70-4c19-baab-609c727f6cde",
 		"5d0f8663-e8c2-4fa0-8cab-539918d79ebb",
@@ -37,14 +37,14 @@ func main() {
 			fmt.Println(v.(string))
 		}
 	})
-	store.CancelFunc(func(v interface{})(ok bool){
+	store.CancelFunc(func(v interface{}) bool {
 		if v != nil {
 			if (v.(string) == "kraken") {
 				fmt.Println(v.(string))
-				ok = true
+				return true
 			}
 		}
-		return
+		return false
 	})
 	b, err := store.ToJSON()
 	if err != nil {
