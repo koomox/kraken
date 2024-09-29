@@ -65,7 +65,9 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 			b += data.ToInsertCrudFormat(InsertFunc, insertFunc, "element", structName, tableName) + "\n\n"
 			b += data.ToSelectCrudFormat(SelectFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, SelectFunc), structName, tableName) + "\n\n"
 			b += data.ToUpdateCrudFormat(UpdateFunc, updateFunc, tableName) + "\n\n"
-			b += data.ToUpdateTickerCrudFormat(UpdateTickerFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, UpdateTickerFunc), structName, tableName) + "\n\n"
+			if data.HasField("updated_at") {
+				b += data.ToUpdateTickerCrudFormat(UpdateTickerFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, UpdateTickerFunc), structName, tableName) + "\n\n"
+			}
 			b += data.ToRemoveCrudFormat(RemoveFunc, removeFunc, tableName) + "\n\n"
 			b += data.ToWhereCrudFormat(WhereFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, WhereFunc), structName, tableName) + "\n\n"
 			b += data.ToSubSelectCrudFormat(ByFunc, queryFunc, byFunc, structName, tableName)
@@ -87,7 +89,9 @@ func ExportCrudFormatFile(modName, pkgName, commandFile, commonFile, storeFile, 
 	values += parsetInt64Format + "\n\n"
 	values += selectFormat + "\n\n"
 	values += whereFormat + "\n\n"
-	values += updateTickerFormat + "\n\n"
+	if source.HasField("updated_at") {
+		values += updateTickerFormat + "\n\n"
+	}
 	values += strings.Join(structArray, "\n\n")
 	if err := WriteFile(values, path.Join(rootDir, pkgName, commonFile)); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", commonFile, err)

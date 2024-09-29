@@ -101,6 +101,26 @@ func (source *Database) ToString() (s string) {
 	return
 }
 
+func (source *Database) HasField(name string) bool {
+	for idx := range source.Tables {
+		for i := range source.Tables[idx].Fields {
+			if strings.EqualFold(source.Tables[idx].Fields[i].Name, name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (f *MetadataTable) HasField(name string) bool {
+	for i := range f.Fields {
+		if strings.EqualFold(f.Fields[i].Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
 func (f *MetadataTable) PrimaryKey() (elements []*Field) {
 	for i := range f.Fields {
 		if f.Fields[i].PrimaryKey {
@@ -150,7 +170,7 @@ func (f *MetadataTable) Id() string {
 			ids = append(ids, "%v")
 			idx = append(idx, fmt.Sprintf("element.%s", keys[i].ToUpperCase()))
 		}
-		return "fmt.Sprintf(" + `"` + strings.Join(ids, "-") + `", ` + strings.Join(idx, ", ") + ")"
+		return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(ids, "-"), strings.Join(idx, ", "))
 	}
 }
 
@@ -166,7 +186,7 @@ func (f *MetadataTable) id() string {
 			ids = append(ids, "%v")
 			idx = append(idx, fmt.Sprintf("%s", keys[i].ToLowerCase()))
 		}
-		return "fmt.Sprintf(" + `"` + strings.Join(ids, "-") + `", ` + strings.Join(idx, ", ") + ")"
+		return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(ids, "-"), strings.Join(idx, ", "))
 	}
 }
 

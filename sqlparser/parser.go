@@ -70,16 +70,36 @@ func findPrimaryKey(s string) (elements []string) {
 	return
 }
 
-func Trim(s string) string {
-	var ch []byte
-	for i := range s {
-		switch s[i] {
-		case ',', '(', ')', '`', '"':
-		default:
-			ch = append(ch, s[i])
+func TrimFunc(s string, f func(rune) bool) string {
+	var builder strings.Builder
+	builder.Grow(len(s))
+
+	for _, r := range s {
+		if !f(r) {
+			builder.WriteRune(r)
 		}
 	}
-	return string(ch)
+	return builder.String()
+}
+
+func Trim(s string) string {
+	return TrimFunc(s, func(r rune) bool {
+		return r == ',' || r == '(' || r == ')' || r == '`' || r == '"'
+	})
+}
+
+func TrimArray(parts ...string) []string {
+	p := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		trimmed := Trim(part)
+		if trimmed != "" {
+			p = append(p, trimmed)
+		}
+	}
+	return p
 }
 
 func Split(s, sep string) (elements []string) {
