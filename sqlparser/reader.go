@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func readFile(readCallbackFunc func(string), name string) (err error) {
+func readFile(callback func(string), name string) (err error) {
 	f, err := os.Open(name)
 	if err != nil {
 		return
@@ -23,7 +23,7 @@ func readFile(readCallbackFunc func(string), name string) (err error) {
 		line = strings.Replace(line, "\r", "", -1)
 		line = strings.Replace(line, "\n", "", -1)
 		line = strings.TrimSpace(line)
-		readCallbackFunc(line)
+		callback(line)
 		if err == io.EOF {
 			return nil
 		}
