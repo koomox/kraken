@@ -17,6 +17,9 @@ func findField(s string) (element *Field) {
 		if element.Name != "" && strings.EqualFold(b[i], "AUTO_INCREMENT") {
 			element.AutoIncrment = true
 		}
+		if element.Name != "" && strings.EqualFold(b[i], "PRIMARY") {
+			element.PrimaryKey = true
+		}
 		if findKeywordString(b[i]) != "" {
 			continue
 		}
@@ -100,6 +103,19 @@ func TrimArray(parts ...string) []string {
 		}
 	}
 	return p
+}
+
+func GenerateFunctionName(prefix string, keywords ...string) string {
+	var builder strings.Builder
+	builder.Grow(len(keywords) + 1)
+	builder.WriteString(prefix)
+
+	for _, keyword := range keywords {
+		if keyword != "" {
+			builder.WriteString(keyword)
+		}
+	}
+	return builder.String()
 }
 
 func Split(s, sep string) (elements []string) {

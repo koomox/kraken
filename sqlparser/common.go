@@ -190,6 +190,47 @@ func (f *MetadataTable) id() string {
 	}
 }
 
+func (m *MetadataTable) ExtractUpdateFieldFormat() (names, types, formats []string) {
+	for _, field := range m.Fields {
+		switch field.Name {
+		case "updated_by", "updated_at":
+			names = append(names, field.Name)
+			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
+			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
+		}
+	}
+	return names, types, formats
+}
+
+func (m *MetadataTable) ExtractPrimaryFieldFormat() (names, types, formats []string) {
+	for _, field := range m.Fields {
+		if field.PrimaryKey {
+			names = append(names, field.Name)
+			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
+			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
+		}
+	}
+	return names, types, formats
+}
+
+func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, formats []string) {
+	for _, field := range m.Fields {
+		switch field.Name {
+		case "updated_by", "updated_at":
+			names = append(names, field.Name)
+			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
+			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
+		default:
+			if field.PrimaryKey {
+				names = append(names, field.Name)
+				types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
+				formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
+			}
+		}
+	}
+	return names, types, formats
+}
+
 func (f *Field) TypeOf() string {
 	switch f.DataType {
 	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":

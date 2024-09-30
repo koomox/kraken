@@ -47,36 +47,14 @@ func (m *MetadataTable) ToUpdateSQLFormat(funcName string) (b string) {
 }
 
 func (m *MetadataTable) ToRemoveSQLFormat(funcName string) (b string) {
-	var args []string
-	var keys []string
-	var format []string
-	var upArgs []string
-	var upKeys []string
-	var upFormat []string
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-			upKeys = append(upKeys, m.Fields[i].Name)
-			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-			upFormat = append(upFormat, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
-		default:
-			if m.Fields[i].PrimaryKey {
-				keys = append(keys, m.Fields[i].Name)
-				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-				format = append(format, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
-			}
-		}
-	}
-
-	switch len(args) {
-	case 1:
-		b = fmt.Sprintf("func %s(%s, %s, table string) string {\n", funcName, args[0], strings.Join(upArgs, ", "))
-		b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET deleted=1, %s WHERE %s`, table, %s, %s)\n}", strings.Join(upFormat, ", "), format[0], strings.Join(upKeys, ", "), keys[0])
-	default:
-		b = fmt.Sprintf("func %s(%s, %s, table string) string {\n", funcName, strings.Join(args, ", "), strings.Join(upArgs, ", "))
-		b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET deleted=1, %s WHERE %s`, table, %s, %s)\n}", strings.Join(upFormat, ", "), strings.Join(format, " AND "), strings.Join(upKeys, ", "), strings.Join(keys, ", "))
-	}
-
+	names, types, format := m.ExtractPrimaryFieldFormat()
+	keys, args, upFormat := m.ExtractUpdateFieldFormat()
+	names = append(names, keys...)
+	types = append(types, args...)
+	formats := []string{"deleted=1"}
+	formats = append(formats, upFormat...)
+	b = fmt.Sprintf("func %s(%s, table string) string {\n", funcName, strings.Join(types, ", "))
+	b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %s WHERE %s`, table, %s)\n}", strings.Join(formats, ", "), strings.Join(format, " AND "), strings.Join(names, ", "))
 	return
 }
 
@@ -146,26 +124,10 @@ func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 }
 
 func (m *MetadataTable) ToSetSQLFormat(funcPrefix string) (b string) {
-	var args []string
-	var keys []string
-	var format []string
-	var upArgs []string
-	var upKeys []string
-	var upFormat []string
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-			upKeys = append(upKeys, m.Fields[i].Name)
-			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-			upFormat = append(upFormat, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
-		default:
-			if m.Fields[i].PrimaryKey {
-				keys = append(keys, m.Fields[i].Name)
-				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-				format = append(format, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
-			}
-		}
-	}
+	names, types, format := m.ExtractPrimaryFieldFormat()
+	keys, args, upFormat := m.ExtractUpdateFieldFormat()
+	names = append(names, keys...)
+	types = append(types, args...)
 
 	for i := range m.Fields {
 		switch m.Fields[i].Name {
@@ -177,41 +139,23 @@ func (m *MetadataTable) ToSetSQLFormat(funcPrefix string) (b string) {
 			}
 		}
 		funcName := funcPrefix + m.Fields[i].ToUpperCase()
-		b += "\n"
-		switch len(args) {
-		case 1:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s, table string) string {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %v=%v, %s WHERE %s`, table, %s, %s, %s)\n}", m.Fields[i].Name, m.Fields[i].ValueOf(), strings.Join(upFormat, ", "), format[0], m.Fields[i].Name, strings.Join(upKeys, ", "), keys[0])
-		default:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s, table string) string {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %v=%v, %s WHERE %s`, table, %s, %s, %s)\n}", m.Fields[i].Name, m.Fields[i].ValueOf(), strings.Join(upFormat, ", "), strings.Join(format, " AND "), m.Fields[i].Name, strings.Join(upKeys, ", "), strings.Join(keys, ", "))
-		}
-		b += "\n"
+		formats := []string{fmt.Sprintf("%v=%v", m.Fields[i].Name, m.Fields[i].ValueOf())}
+		formats = append(formats, upFormat...)
+		keywords := []string{m.Fields[i].Name}
+		keywords = append(keywords, keys...)
+		b += fmt.Sprintf("\nfunc %s(%s %s, %s, table string) string {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(types, ", "))
+		b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %s WHERE %s`, table, %s)\n}\n", strings.Join(formats, ", "), strings.Join(format, " AND "), strings.Join(keywords, ", "))
 	}
 
 	return
 }
 
 func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFunc, structName, tableName string) (b string) {
-	var idx []string
-	var ids []string
-	var args []string
-	switch m.PrimaryKeyLen() {
-	case 1:
-		keys := m.PrimaryKey()
-		b += fmt.Sprintf("func %s%s(%s %s) []*%s {\n", prefixFunc, keys[0].ToUpperCase(), keys[0].Name, keys[0].TypeOf(), structName)
-		b += fmt.Sprintf("\treturn %s(%s%s(%s, %s))\n}\n\n", queryFunc, subPrefixFunc, keys[0].ToUpperCase(), keys[0].Name, tableName)
-	default:
-		for i := range m.Fields {
-			if m.Fields[i].PrimaryKey {
-				idx = append(idx, fmt.Sprintf("%s", m.Fields[i].ToUpperCase()))
-				ids = append(ids, fmt.Sprintf("%s %s", m.Fields[i].Name, m.Fields[i].TypeOf()))
-				args = append(args, m.Fields[i].Name)
-			}
-		}
-		b += fmt.Sprintf("func %s%s(%s) []*%s {\n", prefixFunc, strings.Join(idx, "And"), strings.Join(ids, ", "), structName)
-		b += fmt.Sprintf("\treturn %s(%s%s(%s, %s))\n}\n\n", queryFunc, subPrefixFunc, strings.Join(idx, "And"), strings.Join(args, ", "), tableName)
-	}
+	names, types, _ := m.ExtractPrimaryFieldFormat()
+	mainFunc := GenerateFunctionName(prefixFunc, names...)
+	subFunc := GenerateFunctionName(subPrefixFunc, names...)
+	b = fmt.Sprintf("func %s(%s) []*%s{\n", mainFunc, strings.Join(types, ", "), structName)
+	b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, subFunc, strings.Join(names, ", "), tableName)
 
 	for i := range m.Fields {
 		switch m.Fields[i].Name {
@@ -229,32 +173,9 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 }
 
 func (m *MetadataTable) ToRemoveCrudFormat(funcName, removeFunc, tableName string) (b string) {
-	var args []string
-	var keys []string
-	var upArgs []string
-	var upKeys []string
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-			upKeys = append(upKeys, m.Fields[i].Name)
-			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-		default:
-			if m.Fields[i].PrimaryKey {
-				keys = append(keys, m.Fields[i].Name)
-				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-			}
-		}
-	}
-
-	switch len(args) {
-	case 1:
-		b += fmt.Sprintf("func %s(%s, %s) (sql.Result, error) {\n", funcName, args[0], strings.Join(upArgs, ", "))
-		b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s))\n}", removeFunc, keys[0], strings.Join(upKeys, ", "), tableName)
-	default:
-		b += fmt.Sprintf("func %s(%s, %s) (sql.Result, error) {\n", funcName, strings.Join(args, ", "), strings.Join(upArgs, ", "))
-		b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s))\n}", removeFunc, strings.Join(keys, ", "), strings.Join(upKeys, ", "), tableName)
-	}
-
+	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
+	b = fmt.Sprintf("func %s(%s) (sql.Result, error) {\n", funcName, strings.Join(types, ", "))
+	b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s))\n}", removeFunc, strings.Join(names, ", "), tableName)
 	return
 }
 
@@ -304,22 +225,7 @@ func (m *MetadataTable) ToUpdateTickerCrudFormat(funcName, queryFunc, updateTick
 }
 
 func (m *MetadataTable) ToSetCrudFormat(funcPrefix, setPrefix, tableName string) (b string) {
-	var args []string
-	var keys []string
-	var upArgs []string
-	var upKeys []string
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-			upKeys = append(upKeys, m.Fields[i].Name)
-			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-		default:
-			if m.Fields[i].PrimaryKey {
-				keys = append(keys, m.Fields[i].Name)
-				args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-			}
-		}
-	}
+	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
 
 	for i := range m.Fields {
 		switch m.Fields[i].Name {
@@ -332,16 +238,8 @@ func (m *MetadataTable) ToSetCrudFormat(funcPrefix, setPrefix, tableName string)
 		}
 		funcName := funcPrefix + m.Fields[i].ToUpperCase()
 		setFunc := setPrefix + m.Fields[i].ToUpperCase()
-		b += "\n"
-		switch len(args) {
-		case 1:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s, %s))\n}", setFunc, m.Fields[i].Name, keys[0], strings.Join(upKeys, ", "), tableName)
-		default:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s, %s))\n}", setFunc, m.Fields[i].Name, strings.Join(keys, ", "), strings.Join(upKeys, ", "), tableName)
-		}
-		b += "\n"
+		b += fmt.Sprintf("\nfunc %s(%s %s, %s) (sql.Result, error) {\n", funcName, m.Fields[i].Name, m.Fields[i].TypeOf(), strings.Join(types, ", "))
+		b += fmt.Sprintf("\treturn mysql.Exec(%s(%s, %s, %s))\n}\n", setFunc, m.Fields[i].Name, strings.Join(names, ", "), tableName)
 	}
 
 	return
