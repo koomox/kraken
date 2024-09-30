@@ -23,26 +23,9 @@ func (m *MetadataTable) ToInsertSQLFormat(funcName, structPrefix, structName str
 }
 
 func (m *MetadataTable) ToUpdateSQLFormat(funcName string) (b string) {
-	var args []string
-	var keys []string
-	var format []string
-	for i := range m.Fields {
-		if m.Fields[i].PrimaryKey {
-			keys = append(keys, m.Fields[i].Name)
-			args = append(args, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-			format = append(format, fmt.Sprintf(`%v=%v`, m.Fields[i].Name, m.Fields[i].ValueOf()))
-		}
-	}
-
-	switch len(args) {
-	case 1:
-		b = fmt.Sprintf("func %s(command string, %s, table string) string {\n", funcName, args[0])
-		b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %%s WHERE %s`, table, command, %s)\n}", format[0], keys[0])
-	default:
-		b = fmt.Sprintf("func %s(command string, %s, table string) string {\n", funcName, strings.Join(args, ", "))
-		b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %%s WHERE %s`, table, command, %s)\n}", strings.Join(format, " AND "), strings.Join(keys, ", "))
-	}
-
+	names, types, formats := m.ExtractPrimaryFieldFormat()
+	b = fmt.Sprintf("func %s(command string, %s, table string) string {\n", funcName, strings.Join(types, ", "))
+	b += fmt.Sprintf("\treturn fmt.Sprintf(`UPDATE %%s SET %%s WHERE %s`, table, command, %s)\n}", strings.Join(formats, " AND "), strings.Join(names, ", "))
 	return
 }
 
