@@ -106,16 +106,10 @@ func TrimArray(parts ...string) []string {
 }
 
 func GenerateFunctionName(prefix string, keywords ...string) string {
-	var builder strings.Builder
-	builder.Grow(len(keywords) + 1)
-	builder.WriteString(prefix)
-
-	for _, keyword := range keywords {
-		if keyword != "" {
-			builder.WriteString(keyword)
-		}
+	for i, keyword := range keywords {
+		keywords[i] = toFieldUpperFormat(keyword)
 	}
-	return builder.String()
+	return prefix + strings.Join(keywords, "And")
 }
 
 func Split(s, sep string) (elements []string) {
