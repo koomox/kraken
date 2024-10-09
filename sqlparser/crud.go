@@ -36,6 +36,12 @@ func (m *MetadataTable) ToRemoveSQLFormat(funcName string) (b string) {
 	return
 }
 
+func (m *MetadataTable) ToWhereSQLFormat(funcName string) (b string) {
+	b = fmt.Sprintf("func %s(command, table string) string {\n", funcName)
+	b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %%s`, table, command)\n}")
+	return
+}
+
 func (m *MetadataTable) ToQuerySQLFormat(funcName, structPrefix, structName string) (b string) {
 	b = fmt.Sprintf("func %s(command string) (%s []*%s) {\n", funcName, structPrefix, structName)
 	b += "\tdata, length := mysql.Query(command)\n"
@@ -121,12 +127,12 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 	for i := range m.Fields {
 		switch m.Fields[i].Name {
 		case "created_by":
-			b += fmt.Sprintf("func %s%s(%s %s) []*%s {\n", prefixFunc, m.Fields[i].ToUpperCase(), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
-			b += fmt.Sprintf("\treturn %s(%s%s(%s, %s))\n}\n\n", queryFunc, subPrefixFunc, m.Fields[i].ToUpperCase(), m.Fields[i].Name, tableName)
+			b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
+			b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
 		default:
 			if !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
-				b += fmt.Sprintf("func %s%s(%s %s) []*%s {\n", prefixFunc, m.Fields[i].ToUpperCase(), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
-				b += fmt.Sprintf("\treturn %s(%s%s(%s, %s))\n}\n\n", queryFunc, subPrefixFunc, m.Fields[i].ToUpperCase(), m.Fields[i].Name, tableName)
+				b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
+				b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
 			}
 		}
 	}

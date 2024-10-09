@@ -45,6 +45,47 @@ func toFieldLowerFormat(s string) string {
 	return string(ch)
 }
 
+func ToUpperCamel(s string) string {
+	isSymbol := false
+	var ch []rune
+	for i, c := range s {
+		if c == '_' {
+			isSymbol = true
+			continue
+		}
+		if i == 0 {
+			isSymbol = true
+		}
+		if isSymbol && c != '_' {
+			ch = append(ch, unicode.ToUpper(c))
+			isSymbol = false
+			continue
+		}
+		ch = append(ch, c)
+	}
+
+	return string(ch)
+}
+
+func ToLowerCamel(s string) string {
+	isSymbol := false
+	var ch []rune
+	for _, c := range s {
+		if c == '_' {
+			isSymbol = true
+			continue
+		}
+		if isSymbol && c != '_' {
+			ch = append(ch, unicode.ToUpper(c))
+			isSymbol = false
+			continue
+		}
+		ch = append(ch, c)
+	}
+
+	return string(ch)
+}
+
 func toLowerCamelFormat(s string) string {
 	isSymbol := false
 	var ch []rune
