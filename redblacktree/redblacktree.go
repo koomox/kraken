@@ -1,107 +1,66 @@
+// Copyright (c) 2015, Emir Pasic. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package redblacktree implements a red-black tree.
+//
+// Used by TreeSet and TreeMap.
+//
+// Structure is not thread safe.
+//
+// References: http://en.wikipedia.org/wiki/Red%E2%80%93black_tree
 package redblacktree
 
 import (
-	"encoding/json"
+	"cmp"
 	"fmt"
 )
 
-type colorType byte
+type Comparator[T any] func(x, y T) int
+
+// Assert Tree implementation
+
+type color bool
 
 const (
-	black, red colorType = 1, 2
+	black, red color = true, false
 )
 
-// Comparator will make type assertion (see IntComparator for example),
-// which will panic if a or b are not of the asserted type.
-//
-// Should return a number:
-//    negative , if a < b
-//    zero     , if a == b
-//    positive , if a > b
-type Comparator func(a, b interface{}) int
-
-// StringComparator provides a fast comparison on strings
-func StringComparator(a, b interface{}) int {
-	s1 := a.(string)
-	s2 := b.(string)
-	min := len(s2)
-	if len(s1) < len(s2) {
-		min = len(s1)
-	}
-	diff := 0
-	for i := 0; i < min && diff == 0; i++ {
-		diff = int(s1[i]) - int(s2[i])
-	}
-	if diff == 0 {
-		diff = len(s1) - len(s2)
-	}
-	if diff < 0 {
-		return -1
-	}
-	if diff > 0 {
-		return 1
-	}
-	return 0
-}
-
-// IntComparator provides a basic comparison on int
-func IntComparator(a, b interface{}) int {
-	aAsserted := a.(int)
-	bAsserted := b.(int)
-	switch {
-	case aAsserted > bAsserted:
-		return 1
-	case aAsserted < bAsserted:
-		return -1
-	default:
-		return 0
-	}
-}
-
-// IntComparator provides a basic comparison on int
-func Int64Comparator(a, b interface{}) int {
-	aAsserted := a.(int64)
-	bAsserted := b.(int64)
-	switch {
-	case aAsserted > bAsserted:
-		return 1
-	case aAsserted < bAsserted:
-		return -1
-	default:
-		return 0
-	}
-}
-
 // Tree holds elements of the red-black tree
-type Tree struct {
-	Root       *Node
+type Tree[K comparable, V any] struct {
+	Root       *Node[K, V]
 	size       int
-	Comparator Comparator
+	Comparator Comparator[K]
 }
 
 // Node is a single element within the tree
-type Node struct {
-	Key    interface{}
-	Value  interface{}
-	color  colorType
-	Left   *Node
-	Right  *Node
-	Parent *Node
+type Node[K comparable, V any] struct {
+	Key    K
+	Value  V
+	color  color
+	Left   *Node[K, V]
+	Right  *Node[K, V]
+	Parent *Node[K, V]
+}
+
+// New instantiates a red-black tree with the built-in comparator for K
+func New[K cmp.Ordered, V any]() *Tree[K, V] {
+	return &Tree[K, V]{Comparator: cmp.Compare[K]}
 }
 
 // NewWith instantiates a red-black tree with the custom comparator.
-func NewWith(comparator Comparator) *Tree {
-	return &Tree{Comparator: comparator}
+func NewWith[K comparable, V any](comparator Comparator[K]) *Tree[K, V] {
+	return &Tree[K, V]{Comparator: comparator}
 }
 
 // Put inserts node into the tree.
 // Key should adhere to the comparator's type assertion, otherwise method panics.
-func (tree *Tree) Put(key interface{}, value interface{}) {
-	var insertedNode *Node
+func (tree *Tree[K, V]) Put(key K, value V) {
+	var insertedNode *Node[K, V]
 	if tree.Root == nil {
 		// Assert key is of comparator's type for initial tree
 		tree.Comparator(key, key)
-		tree.Root = &Node{Key: key, Value: value, color: red}
+		tree.Root = &Node[K, V]{Key: key, Value: value, color: red}
 		insertedNode = tree.Root
 	} else {
 		node := tree.Root
@@ -115,7 +74,7 @@ func (tree *Tree) Put(key interface{}, value interface{}) {
 				return
 			case compare < 0:
 				if node.Left == nil {
-					node.Left = &Node{Key: key, Value: value, color: red}
+					node.Left = &Node[K, V]{Key: key, Value: value, color: red}
 					insertedNode = node.Left
 					loop = false
 				} else {
@@ -123,7 +82,7 @@ func (tree *Tree) Put(key interface{}, value interface{}) {
 				}
 			case compare > 0:
 				if node.Right == nil {
-					node.Right = &Node{Key: key, Value: value, color: red}
+					node.Right = &Node[K, V]{Key: key, Value: value, color: red}
 					insertedNode = node.Right
 					loop = false
 				} else {
@@ -140,18 +99,24 @@ func (tree *Tree) Put(key interface{}, value interface{}) {
 // Get searches the node in the tree by key and returns its value or nil if key is not found in tree.
 // Second return parameter is true if key was found, otherwise false.
 // Key should adhere to the comparator's type assertion, otherwise method panics.
-func (tree *Tree) Get(key interface{}) (value interface{}, found bool) {
+func (tree *Tree[K, V]) Get(key K) (value V, found bool) {
 	node := tree.lookup(key)
 	if node != nil {
 		return node.Value, true
 	}
-	return nil, false
+	return value, false
+}
+
+// GetNode searches the node in the tree by key and returns its node or nil if key is not found in tree.
+// Key should adhere to the comparator's type assertion, otherwise method panics.
+func (tree *Tree[K, V]) GetNode(key K) *Node[K, V] {
+	return tree.lookup(key)
 }
 
 // Remove remove the node from the tree by key.
 // Key should adhere to the comparator's type assertion, otherwise method panics.
-func (tree *Tree) Remove(key interface{}) {
-	var child *Node
+func (tree *Tree[K, V]) Remove(key K) {
+	var child *Node[K, V]
 	node := tree.lookup(key)
 	if node == nil {
 		return
@@ -181,18 +146,34 @@ func (tree *Tree) Remove(key interface{}) {
 }
 
 // Empty returns true if tree does not contain any nodes
-func (tree *Tree) Empty() bool {
+func (tree *Tree[K, V]) Empty() bool {
 	return tree.size == 0
 }
 
 // Size returns number of nodes in the tree.
-func (tree *Tree) Size() int {
+func (tree *Tree[K, V]) Size() int {
 	return tree.size
 }
 
+// Size returns the number of elements stored in the subtree.
+// Computed dynamically on each call, i.e. the subtree is traversed to count the number of the nodes.
+func (node *Node[K, V]) Size() int {
+	if node == nil {
+		return 0
+	}
+	size := 1
+	if node.Left != nil {
+		size += node.Left.Size()
+	}
+	if node.Right != nil {
+		size += node.Right.Size()
+	}
+	return size
+}
+
 // Keys returns all keys in-order
-func (tree *Tree) Keys() []interface{} {
-	keys := make([]interface{}, tree.size)
+func (tree *Tree[K, V]) Keys() []K {
+	keys := make([]K, tree.size)
 	it := tree.Iterator()
 	for i := 0; it.Next(); i++ {
 		keys[i] = it.Key()
@@ -201,8 +182,8 @@ func (tree *Tree) Keys() []interface{} {
 }
 
 // Values returns all values in-order based on the key.
-func (tree *Tree) Values() []interface{} {
-	values := make([]interface{}, tree.size)
+func (tree *Tree[K, V]) Values() []V {
+	values := make([]V, tree.size)
 	it := tree.Iterator()
 	for i := 0; it.Next(); i++ {
 		values[i] = it.Value()
@@ -211,8 +192,8 @@ func (tree *Tree) Values() []interface{} {
 }
 
 // Left returns the left-most (min) node or nil if tree is empty.
-func (tree *Tree) Left() *Node {
-	var parent *Node
+func (tree *Tree[K, V]) Left() *Node[K, V] {
+	var parent *Node[K, V]
 	current := tree.Root
 	for current != nil {
 		parent = current
@@ -222,8 +203,8 @@ func (tree *Tree) Left() *Node {
 }
 
 // Right returns the right-most (max) node or nil if tree is empty.
-func (tree *Tree) Right() *Node {
-	var parent *Node
+func (tree *Tree[K, V]) Right() *Node[K, V] {
+	var parent *Node[K, V]
 	current := tree.Root
 	for current != nil {
 		parent = current
@@ -240,7 +221,7 @@ func (tree *Tree) Right() *Node {
 // all nodes in the tree are larger than the given node.
 //
 // Key should adhere to the comparator's type assertion, otherwise method panics.
-func (tree *Tree) Floor(key interface{}) (floor *Node, found bool) {
+func (tree *Tree[K, V]) Floor(key K) (floor *Node[K, V], found bool) {
 	found = false
 	node := tree.Root
 	for node != nil {
@@ -269,7 +250,7 @@ func (tree *Tree) Floor(key interface{}) (floor *Node, found bool) {
 // all nodes in the tree are smaller than the given node.
 //
 // Key should adhere to the comparator's type assertion, otherwise method panics.
-func (tree *Tree) Ceiling(key interface{}) (ceiling *Node, found bool) {
+func (tree *Tree[K, V]) Ceiling(key K) (ceiling *Node[K, V], found bool) {
 	found = false
 	node := tree.Root
 	for node != nil {
@@ -291,13 +272,13 @@ func (tree *Tree) Ceiling(key interface{}) (ceiling *Node, found bool) {
 }
 
 // Clear removes all nodes from the tree.
-func (tree *Tree) Clear() {
+func (tree *Tree[K, V]) Clear() {
 	tree.Root = nil
 	tree.size = 0
 }
 
 // String returns a string representation of container
-func (tree *Tree) String() string {
+func (tree *Tree[K, V]) String() string {
 	str := "RedBlackTree\n"
 	if !tree.Empty() {
 		output(tree.Root, "", true, &str)
@@ -305,11 +286,11 @@ func (tree *Tree) String() string {
 	return str
 }
 
-func (node *Node) String() string {
+func (node *Node[K, V]) String() string {
 	return fmt.Sprintf("%v", node.Key)
 }
 
-func output(node *Node, prefix string, isTail bool, str *string) {
+func output[K comparable, V any](node *Node[K, V], prefix string, isTail bool, str *string) {
 	if node.Right != nil {
 		newPrefix := prefix
 		if isTail {
@@ -337,7 +318,7 @@ func output(node *Node, prefix string, isTail bool, str *string) {
 	}
 }
 
-func (tree *Tree) lookup(key interface{}) *Node {
+func (tree *Tree[K, V]) lookup(key K) *Node[K, V] {
 	node := tree.Root
 	for node != nil {
 		compare := tree.Comparator(key, node.Key)
@@ -353,21 +334,21 @@ func (tree *Tree) lookup(key interface{}) *Node {
 	return nil
 }
 
-func (node *Node) grandparent() *Node {
+func (node *Node[K, V]) grandparent() *Node[K, V] {
 	if node != nil && node.Parent != nil {
 		return node.Parent.Parent
 	}
 	return nil
 }
 
-func (node *Node) uncle() *Node {
+func (node *Node[K, V]) uncle() *Node[K, V] {
 	if node == nil || node.Parent == nil || node.Parent.Parent == nil {
 		return nil
 	}
 	return node.Parent.sibling()
 }
 
-func (node *Node) sibling() *Node {
+func (node *Node[K, V]) sibling() *Node[K, V] {
 	if node == nil || node.Parent == nil {
 		return nil
 	}
@@ -377,7 +358,7 @@ func (node *Node) sibling() *Node {
 	return node.Parent.Left
 }
 
-func (tree *Tree) rotateLeft(node *Node) {
+func (tree *Tree[K, V]) rotateLeft(node *Node[K, V]) {
 	right := node.Right
 	tree.replaceNode(node, right)
 	node.Right = right.Left
@@ -388,7 +369,7 @@ func (tree *Tree) rotateLeft(node *Node) {
 	node.Parent = right
 }
 
-func (tree *Tree) rotateRight(node *Node) {
+func (tree *Tree[K, V]) rotateRight(node *Node[K, V]) {
 	left := node.Left
 	tree.replaceNode(node, left)
 	node.Left = left.Right
@@ -399,7 +380,7 @@ func (tree *Tree) rotateRight(node *Node) {
 	node.Parent = left
 }
 
-func (tree *Tree) replaceNode(old *Node, new *Node) {
+func (tree *Tree[K, V]) replaceNode(old *Node[K, V], new *Node[K, V]) {
 	if old.Parent == nil {
 		tree.Root = new
 	} else {
@@ -414,7 +395,7 @@ func (tree *Tree) replaceNode(old *Node, new *Node) {
 	}
 }
 
-func (tree *Tree) insertCase1(node *Node) {
+func (tree *Tree[K, V]) insertCase1(node *Node[K, V]) {
 	if node.Parent == nil {
 		node.color = black
 	} else {
@@ -422,14 +403,14 @@ func (tree *Tree) insertCase1(node *Node) {
 	}
 }
 
-func (tree *Tree) insertCase2(node *Node) {
+func (tree *Tree[K, V]) insertCase2(node *Node[K, V]) {
 	if nodeColor(node.Parent) == black {
 		return
 	}
 	tree.insertCase3(node)
 }
 
-func (tree *Tree) insertCase3(node *Node) {
+func (tree *Tree[K, V]) insertCase3(node *Node[K, V]) {
 	uncle := node.uncle()
 	if nodeColor(uncle) == red {
 		node.Parent.color = black
@@ -441,7 +422,7 @@ func (tree *Tree) insertCase3(node *Node) {
 	}
 }
 
-func (tree *Tree) insertCase4(node *Node) {
+func (tree *Tree[K, V]) insertCase4(node *Node[K, V]) {
 	grandparent := node.grandparent()
 	if node == node.Parent.Right && node.Parent == grandparent.Left {
 		tree.rotateLeft(node.Parent)
@@ -453,7 +434,7 @@ func (tree *Tree) insertCase4(node *Node) {
 	tree.insertCase5(node)
 }
 
-func (tree *Tree) insertCase5(node *Node) {
+func (tree *Tree[K, V]) insertCase5(node *Node[K, V]) {
 	node.Parent.color = black
 	grandparent := node.grandparent()
 	grandparent.color = red
@@ -464,7 +445,7 @@ func (tree *Tree) insertCase5(node *Node) {
 	}
 }
 
-func (node *Node) maximumNode() *Node {
+func (node *Node[K, V]) maximumNode() *Node[K, V] {
 	if node == nil {
 		return nil
 	}
@@ -474,14 +455,14 @@ func (node *Node) maximumNode() *Node {
 	return node
 }
 
-func (tree *Tree) deleteCase1(node *Node) {
+func (tree *Tree[K, V]) deleteCase1(node *Node[K, V]) {
 	if node.Parent == nil {
 		return
 	}
 	tree.deleteCase2(node)
 }
 
-func (tree *Tree) deleteCase2(node *Node) {
+func (tree *Tree[K, V]) deleteCase2(node *Node[K, V]) {
 	sibling := node.sibling()
 	if nodeColor(sibling) == red {
 		node.Parent.color = red
@@ -495,7 +476,7 @@ func (tree *Tree) deleteCase2(node *Node) {
 	tree.deleteCase3(node)
 }
 
-func (tree *Tree) deleteCase3(node *Node) {
+func (tree *Tree[K, V]) deleteCase3(node *Node[K, V]) {
 	sibling := node.sibling()
 	if nodeColor(node.Parent) == black &&
 		nodeColor(sibling) == black &&
@@ -508,7 +489,7 @@ func (tree *Tree) deleteCase3(node *Node) {
 	}
 }
 
-func (tree *Tree) deleteCase4(node *Node) {
+func (tree *Tree[K, V]) deleteCase4(node *Node[K, V]) {
 	sibling := node.sibling()
 	if nodeColor(node.Parent) == red &&
 		nodeColor(sibling) == black &&
@@ -521,7 +502,7 @@ func (tree *Tree) deleteCase4(node *Node) {
 	}
 }
 
-func (tree *Tree) deleteCase5(node *Node) {
+func (tree *Tree[K, V]) deleteCase5(node *Node[K, V]) {
 	sibling := node.sibling()
 	if node == node.Parent.Left &&
 		nodeColor(sibling) == black &&
@@ -541,7 +522,7 @@ func (tree *Tree) deleteCase5(node *Node) {
 	tree.deleteCase6(node)
 }
 
-func (tree *Tree) deleteCase6(node *Node) {
+func (tree *Tree[K, V]) deleteCase6(node *Node[K, V]) {
 	sibling := node.sibling()
 	sibling.color = nodeColor(node.Parent)
 	node.Parent.color = black
@@ -554,177 +535,9 @@ func (tree *Tree) deleteCase6(node *Node) {
 	}
 }
 
-func nodeColor(node *Node) colorType {
+func nodeColor[K comparable, V any](node *Node[K, V]) color {
 	if node == nil {
 		return black
 	}
 	return node.color
-}
-
-// Iterator holding the iterator's state
-type Iterator struct {
-	tree     *Tree
-	node     *Node
-	position position
-}
-
-type position byte
-
-const (
-	begin, between, end position = 0, 1, 2
-)
-
-// Iterator returns a stateful iterator whose elements are key/value pairs.
-func (tree *Tree) Iterator() Iterator {
-	return Iterator{tree: tree, node: nil, position: begin}
-}
-
-// Next moves the iterator to the next element and returns true if there was a next element in the container.
-// If Next() returns true, then next element's key and value can be retrieved by Key() and Value().
-// If Next() was called for the first time, then it will point the iterator to the first element if it exists.
-// Modifies the state of the iterator.
-func (iterator *Iterator) Next() bool {
-	if iterator.position == end {
-		goto end
-	}
-	if iterator.position == begin {
-		left := iterator.tree.Left()
-		if left == nil {
-			goto end
-		}
-		iterator.node = left
-		goto between
-	}
-	if iterator.node.Right != nil {
-		iterator.node = iterator.node.Right
-		for iterator.node.Left != nil {
-			iterator.node = iterator.node.Left
-		}
-		goto between
-	}
-	if iterator.node.Parent != nil {
-		node := iterator.node
-		for iterator.node.Parent != nil {
-			iterator.node = iterator.node.Parent
-			if iterator.tree.Comparator(node.Key, iterator.node.Key) <= 0 {
-				goto between
-			}
-		}
-	}
-
-end:
-	iterator.node = nil
-	iterator.position = end
-	return false
-
-between:
-	iterator.position = between
-	return true
-}
-
-// Prev moves the iterator to the previous element and returns true if there was a previous element in the container.
-// If Prev() returns true, then previous element's key and value can be retrieved by Key() and Value().
-// Modifies the state of the iterator.
-func (iterator *Iterator) Prev() bool {
-	if iterator.position == begin {
-		goto begin
-	}
-	if iterator.position == end {
-		right := iterator.tree.Right()
-		if right == nil {
-			goto begin
-		}
-		iterator.node = right
-		goto between
-	}
-	if iterator.node.Left != nil {
-		iterator.node = iterator.node.Left
-		for iterator.node.Right != nil {
-			iterator.node = iterator.node.Right
-		}
-		goto between
-	}
-	if iterator.node.Parent != nil {
-		node := iterator.node
-		for iterator.node.Parent != nil {
-			iterator.node = iterator.node.Parent
-			if iterator.tree.Comparator(node.Key, iterator.node.Key) >= 0 {
-				goto between
-			}
-		}
-	}
-
-begin:
-	iterator.node = nil
-	iterator.position = begin
-	return false
-
-between:
-	iterator.position = between
-	return true
-}
-
-// Value returns the current element's value.
-// Does not modify the state of the iterator.
-func (iterator *Iterator) Value() interface{} {
-	return iterator.node.Value
-}
-
-// Key returns the current element's key.
-// Does not modify the state of the iterator.
-func (iterator *Iterator) Key() interface{} {
-	return iterator.node.Key
-}
-
-// Begin resets the iterator to its initial state (one-before-first)
-// Call Next() to fetch the first element if any.
-func (iterator *Iterator) Begin() {
-	iterator.node = nil
-	iterator.position = begin
-}
-
-// End moves the iterator past the last element (one-past-the-end).
-// Call Prev() to fetch the last element if any.
-func (iterator *Iterator) End() {
-	iterator.node = nil
-	iterator.position = end
-}
-
-// First moves the iterator to the first element and returns true if there was a first element in the container.
-// If First() returns true, then first element's key and value can be retrieved by Key() and Value().
-// Modifies the state of the iterator
-func (iterator *Iterator) First() bool {
-	iterator.Begin()
-	return iterator.Next()
-}
-
-// Last moves the iterator to the last element and returns true if there was a last element in the container.
-// If Last() returns true, then last element's key and value can be retrieved by Key() and Value().
-// Modifies the state of the iterator.
-func (iterator *Iterator) Last() bool {
-	iterator.End()
-	return iterator.Prev()
-}
-
-// ToJSON outputs the JSON representation of the tree.
-func (tree *Tree) ToJSON() ([]byte, error) {
-	elements := make(map[string]interface{})
-	it := tree.Iterator()
-	for it.Next() {
-		elements[it.Key().(string)] = it.Value()
-	}
-	return json.Marshal(&elements)
-}
-
-// FromJSON populates the tree from the input JSON representation.
-func (tree *Tree) FromJSON(data []byte) error {
-	elements := make(map[string]interface{})
-	err := json.Unmarshal(data, &elements)
-	if err == nil {
-		tree.Clear()
-		for key, value := range elements {
-			tree.Put(key, value)
-		}
-	}
-	return err
 }
