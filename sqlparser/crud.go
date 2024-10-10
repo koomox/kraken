@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+func (m *MetadataTable) ToSelectSQLFormat(funcName string) (b string) {
+	return fmt.Sprintf("func %s(table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %%s`, table)\n}", funcName)
+}
+
 func (m *MetadataTable) ToInsertSQLFormat(funcName, structPrefix, structName string) (b string) {
 	var keys []string
 	var values []string
