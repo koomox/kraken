@@ -35,26 +35,19 @@ func findField(s string) (element *Field) {
 }
 
 func matchTableName(s string) string {
-	var ch []byte
-	isValid := false
 	for i := range s {
-		switch s[i] {
-		case '.':
-			isValid = true
-		default:
-			if isValid {
-				ch = append(ch, s[i])
-			}
+		if i == '.' {
+			return s[i:]
 		}
 	}
-	return string(ch)
+	return s
 }
 
 func findTableName(s string) string {
 	options := Split(s, " ")
 	for i := range options {
 		v := options[i]
-		if findKeywordString(v) == "" && strings.Contains(v, ".") {
+		if findKeywordString(v) == "" {
 			return matchTableName(v)
 		}
 	}
