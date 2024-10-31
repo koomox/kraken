@@ -6,29 +6,24 @@ import (
 
 func findField(s string) (element *Field) {
 	element = &Field{}
-	b := Split(s, " ")
-	for i := 0; i < len(b); i++ {
-		if b[i] == "" {
-			continue
-		}
-		if element.Name != "" && strings.EqualFold(b[i], "UNIQUE") {
+	parts := Split(s, " ")
+	for _, part := range parts {
+		switch {
+		case element.HasComment:
+			element.Comment = part
+		case strings.EqualFold(part, "UNIQUE"):
 			element.Unique = true
-		}
-		if element.Name != "" && strings.EqualFold(b[i], "AUTO_INCREMENT") {
+		case strings.EqualFold(part, "AUTO_INCREMENT"):
 			element.AutoIncrment = true
-		}
-		if element.Name != "" && strings.EqualFold(b[i], "PRIMARY") {
+		case strings.EqualFold(part, "PRIMARY"):
 			element.PrimaryKey = true
-		}
-		if findKeywordString(b[i]) != "" {
-			continue
-		}
-		if v := findDataTypeString(b[i]); v != "" {
-			element.DataType = v
-			continue
-		}
-		if element.Name == "" {
-			element.Name = b[i]
+		case strings.EqualFold(part, "COMMENT"):
+			element.HasComment = true
+		case element.DataType == "" && findDataTypeString(part) != "":
+			element.DataType = findDataTypeString(part)
+		case element.Name == "" && findKeywordString(part) == "":
+			element.Name = part
+		default:
 		}
 	}
 	return

@@ -35,6 +35,7 @@ var (
 		"SELECT",
 		"NULL",
 		"AUTO_INCREMENT",
+		"COMMENT",
 	}
 
 	dataTypeKeywords = []string{
@@ -76,9 +77,11 @@ type MetadataTable struct {
 type Field struct {
 	Name         string
 	DataType     string
+	Comment string
 	Unique       bool
 	PrimaryKey   bool
 	AutoIncrment bool
+	HasComment bool
 }
 
 func (source *Database) ToString() (s string) {
