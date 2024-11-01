@@ -105,10 +105,10 @@ func toLowerCamelFormat(s string) string {
 	return string(ch)
 }
 
-func (m *MetadataTable) ToStructFormat(tagField string) (b string) {
+func (m *MetadataTable) ToStructFormat(tagField, labelField string) (b string) {
 	b = fmt.Sprintf("type %v struct {\n", toFieldUpperFormat(m.Name))
 	for i := range m.Fields {
-		b += fmt.Sprintf("\t%v %v `%v:%v%v%v`\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), tagField, `"`, m.Fields[i].Name, `"`)
+		b += fmt.Sprintf("\t%v %v `%v:%v%v%v %v:%v%v%v`\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), tagField, `"`, m.Fields[i].Name, `"`, labelField, `"`, m.Fields[i].Comment, `"`)
 	}
 	b += "}"
 	return

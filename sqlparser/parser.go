@@ -6,11 +6,12 @@ import (
 
 func findField(s string) (element *Field) {
 	element = &Field{}
-	parts := Split(s, " ")
+	parts := SplitBySpaceOutsideQuotes(s)
 	for _, part := range parts {
 		switch {
 		case element.HasComment:
-			element.Comment = part
+			element.Comment = Trim(part)
+			element.HasComment = false
 		case strings.EqualFold(part, "UNIQUE"):
 			element.Unique = true
 		case strings.EqualFold(part, "AUTO_INCREMENT"):
@@ -22,8 +23,11 @@ func findField(s string) (element *Field) {
 		case element.DataType == "" && findDataTypeString(part) != "":
 			element.DataType = findDataTypeString(part)
 		case element.Name == "" && findKeywordString(part) == "":
-			element.Name = part
+			element.Name = Trim(part)
 		default:
+		}
+		if element.Name != "" && element.Comment == "" {
+			element.Comment = element.Name
 		}
 	}
 	return
@@ -75,7 +79,7 @@ func TrimFunc(s string, f func(rune) bool) string {
 
 func Trim(s string) string {
 	return TrimFunc(s, func(r rune) bool {
-		return r == ',' || r == '(' || r == ')' || r == '`' || r == '"'
+		return r == ',' || r == '`' || r == '"' || r == '\''
 	})
 }
 
@@ -118,6 +122,48 @@ func Split(s, sep string) (elements []string) {
 	return
 }
 
+func SplitBySpaceOutsideQuotes(s string) []string {
+	var result []string
+	var part strings.Builder
+	inSingleQuote, inDoubleQuote, inBacktick := false, false, false
+	for _, c := range s {
+		switch c {
+		case '\'':
+			if !inDoubleQuote && !inBacktick {
+				inSingleQuote = !inSingleQuote
+			}
+			part.WriteRune(c)
+		case '"':
+			if !inSingleQuote && !inBacktick {
+				inDoubleQuote = !inDoubleQuote
+			}
+			part.WriteRune(c)
+		case '`':
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+			part.WriteRune(c)
+		case ' ':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick {
+				if part.Len() > 0 {
+					result = append(result, part.String())
+					part.Reset()
+				}
+			} else {
+				part.WriteRune(c)
+			}
+		default:
+			part.WriteRune(c)
+		}
+	}
+
+	if part.Len() > 0 {
+		result = append(result, part.String())
+	}
+
+	return result
+}
+
 func FromFile(filename string) (source *Database) {
 	source = &Database{}
 	table := &MetadataTable{}
@@ -126,8 +172,8 @@ func FromFile(filename string) (source *Database) {
 		if s == "" || strings.HasPrefix(s, "--") {
 			return
 		}
-		options := Split(s, " ")
-		v := findKeywordString(options[0])
+		parts := SplitBySpaceOutsideQuotes(s)
+		v := findKeywordString(parts[0])
 		switch v {
 		case "PRIMARY":
 			if strings.HasPrefix(s, "PRIMARY KEY") {

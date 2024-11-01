@@ -56,7 +56,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 			continue
 		}
 		count += 3
-		structArray = append(structArray, source.Tables[i].ToStructFormat("json"))
+		structArray = append(structArray, source.Tables[i].ToStructFormat("json", "label"))
 		tableName := fmt.Sprintf("%s.%sTable", pkgName, source.Tables[i].ToUpperCase())
 		values += fmt.Sprintf("\t%sTable=\"%s\"\n", source.Tables[i].ToUpperCase(), source.Tables[i].Name)
 		compareArray = append(compareArray, source.Tables[i].ToStructCompareFormat("s", "d", "Compare"))
@@ -203,9 +203,7 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 }
 
 func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database) {
-	head := ""
 	columnsName := "columnsIndex"
-	foot := "export default columnsIndex;"
 	count := 0
 	ch := make(chan error, 1)
 	for i := range source.Tables {
@@ -214,12 +212,10 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 		}
 		count += 1
 		fName := path.Join(rootDir, commonDir, source.Tables[i].ToLowerCase()+".js")
-		go func(head, foot, columnsName, fileName string, data *MetadataTable) {
-			b := head + "\n\n"
-			b += data.ToFrontendColumnsFormat(columnsName) + "\n\n"
-			b += foot
+		go func(columnsName, fileName string, data *MetadataTable) {
+			b := data.ToFrontendColumnsFormat(columnsName) + "\n\n"
 			ch <- WriteFile(b, fileName)
-		}(head, foot, columnsName, fName, source.Tables[i])
+		}(columnsName, fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {
@@ -243,13 +239,13 @@ func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDi
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
 		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database)
-		go func(pkgName, importHead, funcPrefix, elementName, tagName, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendParseFormat(funcPrefix+data.ToUpperCase(), data.ToUpperCase(), elementName) + "\n\n"
-			b += data.ToStructFormat(tagName)
+			b += data.ToStructFormat(tagName, labelName)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "Parse", "element", "json", fName, source.Tables[i])
+		}(pkgName, importHead, "Parse", "element", "json", "label", fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {
@@ -298,11 +294,11 @@ func ExportModelFormatFile(modName, pkgName, component, database, rootDir string
 	fmt.Printf("[success]ExportModelFormatFile: %d\n", count)
 }
 
-func ExportFile(filename, tagField string, data []*MetadataTable) error {
+func ExportFile(filename, tagField, labelField string, data []*MetadataTable) error {
 	var element string
-	for i, _ := range data {
+	for i := range data {
 		element += "\n\n"
-		element += data[i].ToStructFormat(tagField)
+		element += data[i].ToStructFormat(tagField, labelField)
 	}
 
 	return WriteFile(element, filename)

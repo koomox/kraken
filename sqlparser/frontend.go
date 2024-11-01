@@ -24,7 +24,7 @@ func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) string {
 	}
 	var elements []*frontendField
 	for i := 0; i < fieldsLen; i++ {
-		element := &frontendField{Label: m.Fields[i].ToUpperCase(), Field: m.Fields[i].Name, RenderType: "Input"}
+		element := &frontendField{Label: m.Fields[i].Comment, Field: m.Fields[i].Name, RenderType: "Input"}
 		switch m.Fields[i].Name {
 		case "id", "uid", "username":
 			element.Writable = true
@@ -46,7 +46,7 @@ func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) string {
 	}
 
 	b, _ := json.MarshalIndent(elements, "", "    ")
-	return fmt.Sprintf("const %s = %s;", columnsName, string(b))
+	return fmt.Sprintf("export const %s = %s;", columnsName, string(b))
 }
 
 func (m *MetadataTable) ToForntendParseFormat(funcName, structName, elementName string) (b string) {
