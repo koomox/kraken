@@ -34,10 +34,8 @@ func findField(s string) (element *Field) {
 }
 
 func matchTableName(s string) string {
-	for i := range s {
-		if i == '.' {
-			return s[i:]
-		}
+	if idx := strings.IndexByte(s, '.'); idx != -1 {
+		return s[idx+1:]
 	}
 	return s
 }

@@ -1,8 +1,8 @@
 package structparser
 
 import (
-	"reflect"
 	"encoding/base64"
+	"reflect"
 	"strings"
 )
 
@@ -70,11 +70,11 @@ func ToForntendParseFormat(v interface{}, funcName, tagName string) (b string) {
 		case "struct":
 			continue
 		case "string":
-			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "val"))
+			elements = append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "val"))
 		case "int", "int8", "int16", "int32":
-			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt(val)"))
+			elements = append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt(val)"))
 		case "int64":
-			elements =  append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt64(val)"))
+			elements = append(elements, toParseSubFuncFormat(element.Tag.Get(tagName), element.Name, "database.ParseInt64(val)"))
 		}
 	}
 

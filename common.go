@@ -10,7 +10,7 @@ type Cache interface {
 	Values() []interface{}
 	ToJSON() ([]byte, error)
 	CallbackFunc(func(interface{}))
-	CancelFunc(func(interface{})bool)
+	CancelFunc(func(interface{}) bool)
 }
 
 type Tree interface {
@@ -21,5 +21,5 @@ type Tree interface {
 	Values() []interface{}
 	ToJSON() ([]byte, error)
 	CallbackFunc(func(interface{}))
-	CancelFunc(func(interface{})bool)
+	CancelFunc(func(interface{}) bool)
 }

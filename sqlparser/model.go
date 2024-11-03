@@ -50,7 +50,7 @@ func (m *MetadataTable) ToCompareModelFuncFormat(compareFunc, structPrefix, data
 		default:
 			params = append(params, fmt.Sprintf("\tif %s != %s.%s {\n\t\tcommand = append(command, fmt.Sprintf(`%s=%%v`, %s))\n\t}", key, structPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].Name, key))
 		}
-		
+
 	}
 
 	b = fmt.Sprintf("func %s%s(%s, %s *%s.%s) string {\n", compareFunc, m.ToUpperCase(), strings.Join(args, ", "), structPrefix, databasePrefix, m.ToUpperCase())
