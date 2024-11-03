@@ -53,7 +53,7 @@ func findTableName(s string) string {
 }
 
 func findPrimaryKey(s string) (elements []string) {
-	options := Split(s, " ")
+	options := SplitAndTrimSpecialChars(s, " ")
 	for i := range options {
 		v := options[i]
 		if findKeywordString(v) == "" {
@@ -93,6 +93,24 @@ func TrimArray(parts ...string) []string {
 		}
 	}
 	return p
+}
+
+func TrimSpecialChars(s string) string {
+	return TrimFunc(s, func(r rune) bool {
+		return r == ',' || r == '`' || r == '"' || r == '\'' || r == '(' || r == ')'
+	})
+}
+
+func SplitAndTrimSpecialChars(s, sep string) (elements []string) {
+	r := strings.Split(s, sep)
+	for i := range r {
+		v := TrimSpecialChars(r[i])
+		if v == "" {
+			continue
+		}
+		elements = append(elements, v)
+	}
+	return
 }
 
 func GenerateFunctionName(prefix string, keywords ...string) string {
