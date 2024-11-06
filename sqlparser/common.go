@@ -63,6 +63,10 @@ var (
 		"VARBINARY",
 		"ENUM",
 	}
+
+	queryKeywords = []string{
+		"created_by",
+	}
 )
 
 type Database struct {
@@ -82,6 +86,7 @@ type Field struct {
 	PrimaryKey   bool
 	AutoIncrment bool
 	HasComment   bool
+	HasQuery     bool
 }
 
 func (source *Database) ToString() (s string) {
@@ -102,6 +107,21 @@ func (source *Database) ToString() (s string) {
 		}
 	}
 	return
+}
+
+func (source *Database) EnableQueryFields(words ...string) {
+	fields := make(map[string]bool, len(words))
+	for _, word := range words {
+		fields[word] = true
+	}
+
+	for idx := range source.Tables {
+		for i := range source.Tables[idx].Fields {
+			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
+				source.Tables[idx].Fields[i].HasQuery = true
+			}
+		}
+	}
 }
 
 func (source *Database) HasField(name string) bool {
@@ -218,17 +238,10 @@ func (m *MetadataTable) ExtractPrimaryFieldFormat() (names, types, formats []str
 
 func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, formats []string) {
 	for _, field := range m.Fields {
-		switch field.Name {
-		case "updated_by", "updated_at":
+		if field.PrimaryKey || strings.EqualFold(field.Name, "updated_by") || strings.EqualFold(field.Name, "updated_at") {
 			names = append(names, field.Name)
 			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
 			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
-		default:
-			if field.PrimaryKey {
-				names = append(names, field.Name)
-				types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
-				formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
-			}
 		}
 	}
 	return names, types, formats

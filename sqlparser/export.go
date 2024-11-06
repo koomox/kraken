@@ -130,12 +130,12 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	fmt.Printf("[success]ExportCrudFormatFile: %d\n", count)
 }
 
-func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, rootDir string, source *Database) {
+func ExportStorageFormatFile(modName, componentName, pkgName, database, commonFile, rootDir string, source *Database) {
 	store := "store"
 	Store := "Store"
-	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, component, database)
+	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, componentName, database)
 	values := fmt.Sprintf("package %s\n\nimport (\n\t\"encoding/json\"\n", pkgName)
-	values += fmt.Sprintf("\t\"%s/common/memory\"\n\t\"%s/%s/%s\"\n", modName, modName, component, database)
+	values += fmt.Sprintf("\t\"%s/common/memory\"\n\t\"%s/%s/%s\"\n", modName, modName, componentName, database)
 
 	var importArray []string
 	var structArray []string
@@ -148,7 +148,7 @@ func ExportStorageFormatFile(modName, pkgName, component, database, commonFile, 
 			continue
 		}
 		count += 1
-		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, component, database, source.Tables[i].ToLowerCase()))
+		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, componentName, database, source.Tables[i].ToLowerCase()))
 		structArray = append(structArray, fmt.Sprintf("\t%s *%s.%s\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), Store))
 		updateArray = append(updateArray, fmt.Sprintf("\t%s.%s.UpdateTicker(datetime)\n", store, source.Tables[i].ToUpperCase()))
 
@@ -229,7 +229,7 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 	fmt.Printf("[success]ExportFrontendColumnsFormatFile: %d\n", count)
 }
 
-func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
+func ExportForntendParseFormatFile(modName, componentName, pkgName, database, rootDir string, source *Database) {
 	count := 0
 	ch := make(chan error, 1)
 	for i := range source.Tables {
@@ -238,7 +238,7 @@ func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDi
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database)
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database)
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendParseFormat(funcPrefix+data.ToUpperCase(), data.ToUpperCase(), elementName) + "\n\n"
@@ -259,7 +259,7 @@ func ExportForntendParseFormatFile(modName, pkgName, component, database, rootDi
 	fmt.Printf("[success]ExportForntendParseFormatFile: %d\n", count)
 }
 
-func ExportModelFormatFile(modName, pkgName, component, database, rootDir string, source *Database) {
+func ExportModelFormatFile(modName, componentName, pkgName, database, rootDir string, source *Database) {
 	count := 0
 	ch := make(chan error, 1)
 	for i := range source.Tables {
@@ -268,7 +268,7 @@ func ExportModelFormatFile(modName, pkgName, component, database, rootDir string
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, component, database, source.Tables[i].ToLowerCase(), modName, component, database)
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database, source.Tables[i].ToLowerCase(), modName, component, database)
 		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix) + "\n\n"

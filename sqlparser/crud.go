@@ -80,15 +80,12 @@ func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 	b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s`, table, %s)\n}\n\n", strings.Join(formats, " AND "), strings.Join(names, ", "))
 
 	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "created_by":
+		if m.Fields[i].PrimaryKey {
+			continue
+		}
+		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
 			b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
 			b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s=%s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
-		default:
-			if !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
-				b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
-				b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s=%s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
-			}
 		}
 	}
 	return
@@ -129,15 +126,12 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 	b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, subFunc, strings.Join(names, ", "), tableName)
 
 	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "created_by":
+		if m.Fields[i].PrimaryKey {
+			continue
+		}
+		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
 			b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
 			b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
-		default:
-			if !m.Fields[i].PrimaryKey && m.Fields[i].Unique {
-				b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
-				b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
-			}
 		}
 	}
 	return

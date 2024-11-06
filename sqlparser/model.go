@@ -94,28 +94,11 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
 	return
 }
 
-func (m *MetadataTable) ToRemoveModelFuncFormat(removeFunc string) (b string) {
-	var keys []string
-	var args []string
-	funcName := fmt.Sprintf("%s%s", removeFunc, m.ToUpperCase())
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-		default:
-			if !m.Fields[i].PrimaryKey {
-				continue
-			}
-		}
-		key := m.Fields[i].Name
-		if m.Fields[i].Name == m.Name {
-			key = fmt.Sprintf("%sed", m.Fields[i].Name)
-		}
-		keys = append(keys, key)
-		args = append(args, fmt.Sprintf("%s %s", key, m.Fields[i].TypeOf()))
-	}
-	b = fmt.Sprintf("func %s(%s) (sql.Result, error) {\n\treturn %s.%s(%s)\n}", funcName, strings.Join(args, ", "), m.ToLowerCase(), removeFunc, strings.Join(keys, ", "))
+func (m *MetadataTable) ToRemoveModelFuncFormat(removeFunc string) string {
+	funcName := GenerateFunctionName(removeFunc, m.Name)
+	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
 
-	return
+	return fmt.Sprintf("func %s(%s) (sql.Result, error) {\n\treturn %s.%s(%s)\n}", funcName, strings.Join(types, ", "), m.ToLowerCase(), removeFunc, strings.Join(names, ", "))
 }
 
 func (m *MetadataTable) ToWhereModelFuncFormat(whereFunc, databasePrefix string) (b string) {
@@ -125,65 +108,33 @@ func (m *MetadataTable) ToWhereModelFuncFormat(whereFunc, databasePrefix string)
 }
 
 func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix string) (b string) {
-	structName := fmt.Sprintf("%s.%s", databasePrefix, m.ToUpperCase())
-	var idx []string
-	var ids []string
-	var args []string
 	var params []string
-	keys := m.PrimaryKey()
-	switch len(keys) {
-	case 1:
-		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, keys[0].ToUpperCase())
-		params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, keys[0].Name, keys[0].TypeOf(), structName, m.ToLowerCase(), selectPrefix, keys[0].ToUpperCase(), keys[0].Name))
-	default:
-		for _, v := range keys {
-			idx = append(idx, fmt.Sprintf("%s", v.ToUpperCase()))
-			ids = append(ids, fmt.Sprintf("%s %s", v.ToLowerCase(), v.TypeOf()))
-			args = append(args, v.ToLowerCase())
-		}
-		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, strings.Join(idx, "And"))
-		params = append(params, fmt.Sprintf("func %s(%s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, strings.Join(ids, ", "), structName, m.ToLowerCase(), selectPrefix, strings.Join(idx, "And"), strings.Join(args, ", ")))
-	}
+	structName := fmt.Sprintf("%s.%s", databasePrefix, m.ToUpperCase())
+	prefixFunc := fmt.Sprintf("%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix)
+	names, types, _ := m.ExtractPrimaryFieldFormat()
+	mainFunc := GenerateFunctionName(prefixFunc, names...)
+	subFunc := GenerateFunctionName(selectPrefix, names...)
+	params = append(params, fmt.Sprintf("func %s(%s) []*%s {\n\treturn %s.%s(%s)\n}", mainFunc, strings.Join(types, ", "), structName, m.ToLowerCase(), subFunc, strings.Join(names, ", ")))
 
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
 			continue
 		}
-		if m.Fields[i].Name != "created_by" && !m.Fields[i].Unique {
-			continue
+		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
+			key := m.Fields[i].Name
+			if m.Fields[i].Name == m.Name {
+				key = fmt.Sprintf("%sed", m.Fields[i].Name)
+			}
+			funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase())
+			params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, key, m.Fields[i].TypeOf(), structName, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), key))
 		}
-		key := m.Fields[i].Name
-		if m.Fields[i].Name == m.Name {
-			key = fmt.Sprintf("%sed", m.Fields[i].Name)
-		}
-		funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase())
-		params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, key, m.Fields[i].TypeOf(), structName, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), key))
 	}
 
 	return strings.Join(params, "\n\n")
 }
 
 func (m *MetadataTable) ToSetModelFuncFormat(funcPrefix, setPrefix string) (b string) {
-	var args []string
-	var keys []string
-	var upArgs []string
-	var upKeys []string
-	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
-			upKeys = append(upKeys, m.Fields[i].Name)
-			upArgs = append(upArgs, fmt.Sprintf("%v %v", m.Fields[i].Name, m.Fields[i].TypeOf()))
-		default:
-			if m.Fields[i].PrimaryKey {
-				key := m.Fields[i].Name
-				if m.Fields[i].Name == m.Name {
-					key = fmt.Sprintf("%sed", m.Fields[i].Name)
-				}
-				keys = append(keys, key)
-				args = append(args, fmt.Sprintf("%v %v", key, m.Fields[i].TypeOf()))
-			}
-		}
-	}
+	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
 
 	for i := range m.Fields {
 		switch m.Fields[i].Name {
@@ -201,14 +152,8 @@ func (m *MetadataTable) ToSetModelFuncFormat(funcPrefix, setPrefix string) (b st
 		if m.Fields[i].Name == m.Name {
 			key = fmt.Sprintf("%sed", m.Fields[i].Name)
 		}
-		switch len(args) {
-		case 1:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, key, m.Fields[i].TypeOf(), args[0], strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn %s(%s, %s, %s)\n}", setFunc, key, keys[0], strings.Join(upKeys, ", "))
-		default:
-			b += fmt.Sprintf("func %s(%s %s, %s, %s) (sql.Result, error) {\n", funcName, key, m.Fields[i].TypeOf(), strings.Join(args, ", "), strings.Join(upArgs, ", "))
-			b += fmt.Sprintf("\treturn %s(%s, %s, %s)\n}", setFunc, key, strings.Join(keys, ", "), strings.Join(upKeys, ", "))
-		}
+		b += fmt.Sprintf("func %s(%s %s, %s) (sql.Result, error) {\n", funcName, key, m.Fields[i].TypeOf(), strings.Join(types, ", "))
+		b += fmt.Sprintf("\treturn %s(%s, %s)\n}", setFunc, key, strings.Join(names, ", "))
 		b += "\n"
 	}
 
