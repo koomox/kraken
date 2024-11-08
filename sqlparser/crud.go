@@ -83,7 +83,7 @@ func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 		if m.Fields[i].PrimaryKey {
 			continue
 		}
-		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
+		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
 			b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
 			b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s=%s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
 		}
@@ -98,13 +98,8 @@ func (m *MetadataTable) ToSetSQLFormat(funcPrefix string) (b string) {
 	types = append(types, args...)
 
 	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at", "created_by", "created_at":
+		if m.Fields[i].PrimaryKey || m.Fields[i].RequiredUpdate || m.Fields[i].RequiredCreated {
 			continue
-		default:
-			if m.Fields[i].PrimaryKey {
-				continue
-			}
 		}
 		funcName := funcPrefix + m.Fields[i].ToUpperCase()
 		formats := []string{fmt.Sprintf("%v=%v", m.Fields[i].Name, m.Fields[i].ValueOf())}
@@ -129,7 +124,7 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 		if m.Fields[i].PrimaryKey {
 			continue
 		}
-		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
+		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
 			b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
 			b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
 		}
@@ -179,13 +174,8 @@ func (m *MetadataTable) ToSetCrudFormat(funcPrefix, setPrefix, tableName string)
 	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
 
 	for i := range m.Fields {
-		if m.Fields[i].PrimaryKey || m.Fields[i].RequiredUpdate {
+		if m.Fields[i].PrimaryKey || m.Fields[i].RequiredUpdate || m.Fields[i].RequiredCreated {
 			continue
-		}
-		switch m.Fields[i].Name {
-		case "created_by", "created_at":
-			continue
-		default:
 		}
 		funcName := funcPrefix + m.Fields[i].ToUpperCase()
 		setFunc := setPrefix + m.Fields[i].ToUpperCase()

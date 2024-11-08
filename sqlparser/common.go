@@ -75,6 +75,11 @@ var (
 		"updated_by",
 		"updated_at",
 	}
+
+	requiredCreatedKeywords = []string{
+		"created_by",
+		"created_at",
+	}
 )
 
 type Database struct {
@@ -85,6 +90,7 @@ type MetadataTable struct {
 	Name   string
 	Fields []*Field
 	RequiredUpdate bool
+	RequiredCreated bool
 	UpdateTimeField string
 }
 
@@ -98,6 +104,7 @@ type Field struct {
 	HasComment   bool
 	HasQuery     bool
 	RequiredUpdate bool
+	RequiredCreated bool
 }
 
 func (source *Database) ToString() (s string) {
@@ -149,6 +156,22 @@ func (source *Database) EnableRequiredUpdateFields(words ...string) {
 				if source.Tables[idx].Fields[i].TypeOf() == "string" {
 					source.Tables[idx].UpdateTimeField = source.Tables[idx].Fields[i].Name
 				}
+			}
+		}
+	}
+}
+
+func (source *Database) EnableRequiredCreatedFields(words ...string) {
+	fields := make(map[string]bool, len(words))
+	for _, word := range words {
+		fields[word] = true
+	}
+
+	for idx := range source.Tables {
+		for i := range source.Tables[idx].Fields {
+			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
+				source.Tables[idx].RequiredCreated = true
+				source.Tables[idx].Fields[i].RequiredCreated = true
 			}
 		}
 	}
