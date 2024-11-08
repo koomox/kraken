@@ -54,9 +54,9 @@ func (m *MetadataTable) ToForntendParseFormat(funcName, structName, elementName 
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
-		case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
-		case "BIGINT":
+		case "INT", "BIGINT":
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
 		default:
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "val"))

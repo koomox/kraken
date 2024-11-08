@@ -32,11 +32,7 @@ func (m *MetadataTable) ToCompareModelFuncFormat(compareFunc, structPrefix, data
 	var params []string
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment {
-			continue
-		}
-		switch m.Fields[i].Name {
-		case "created_by", "updated_by", "created_at", "updated_at":
+		if m.Fields[i].PrimaryKey || m.Fields[i].AutoIncrment || m.Fields[i].RequiredUpdate || m.Fields[i].RequiredCreated {
 			continue
 		}
 		key := m.Fields[i].Name
@@ -67,19 +63,22 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
 	funcName := fmt.Sprintf("%s%s", updateFunc, m.ToUpperCase())
 	fieldsLen := len(m.Fields)
 	for i := 0; i < fieldsLen; i++ {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at":
+		if !m.Fields[i].PrimaryKey && !m.Fields[i].RequiredUpdate {
+			continue
+		} 
+
+		if m.Fields[i].RequiredUpdate {
 			if m.Fields[i].TypeOf() == "string" {
 				params = append(params, fmt.Sprintf("\tcommand += fmt.Sprintf(`, %s=\"%%v\"`, %s)", m.Fields[i].Name, m.Fields[i].Name))
 			} else {
 				params = append(params, fmt.Sprintf("\tcommand += fmt.Sprintf(`, %s=%%v`, %s)", m.Fields[i].Name, m.Fields[i].Name))
 			}
-		default:
-			if !m.Fields[i].PrimaryKey {
-				continue
-			}
+		} 
+		
+		if m.Fields[i].PrimaryKey {
 			keys = append(keys, m.Fields[i].Name)
 		}
+
 		key := m.Fields[i].Name
 		if m.Fields[i].Name == m.Name {
 			key = fmt.Sprintf("%sed", m.Fields[i].Name)
@@ -126,7 +125,7 @@ func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databa
 		if m.Fields[i].PrimaryKey {
 			continue
 		}
-		if strings.EqualFold(m.Fields[i].Name, "created_by") || m.Fields[i].HasQuery || m.Fields[i].Unique {
+		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
 			key := m.Fields[i].Name
 			if m.Fields[i].Name == m.Name {
 				key = fmt.Sprintf("%sed", m.Fields[i].Name)
@@ -143,13 +142,8 @@ func (m *MetadataTable) ToSetModelFuncFormat(funcPrefix, setPrefix string) (b st
 	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
 
 	for i := range m.Fields {
-		switch m.Fields[i].Name {
-		case "updated_by", "updated_at", "created_by", "created_at":
+		if m.Fields[i].PrimaryKey || m.Fields[i].RequiredUpdate || m.Fields[i].RequiredCreated {
 			continue
-		default:
-			if m.Fields[i].PrimaryKey {
-				continue
-			}
 		}
 		funcName := fmt.Sprintf("%s%s%s%s", funcPrefix, m.ToUpperCase(), setPrefix, m.Fields[i].ToUpperCase())
 		setFunc := fmt.Sprintf("%s.%s%s", m.ToLowerCase(), setPrefix, m.Fields[i].ToUpperCase())
