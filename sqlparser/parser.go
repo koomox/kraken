@@ -224,5 +224,8 @@ func FromFile(filename string) (source *Database) {
 		table.Fields = append(table.Fields, findField(s))
 	}, filename)
 
+	source.EnableQueryFields(queryKeywords...)
+	source.EnableRequiredUpdateFields(requiredUpdateKeywords...)
+
 	return
 }

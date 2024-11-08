@@ -65,7 +65,15 @@ var (
 	}
 
 	queryKeywords = []string{
+		"id",
+		"userid",
+		"username",
 		"created_by",
+	}
+
+	requiredUpdateKeywords = []string{
+		"updated_by",
+		"updated_at",
 	}
 )
 
@@ -76,6 +84,8 @@ type Database struct {
 type MetadataTable struct {
 	Name   string
 	Fields []*Field
+	RequiredUpdate bool
+	UpdateTimeField string
 }
 
 type Field struct {
@@ -87,6 +97,7 @@ type Field struct {
 	AutoIncrment bool
 	HasComment   bool
 	HasQuery     bool
+	RequiredUpdate bool
 }
 
 func (source *Database) ToString() (s string) {
@@ -119,6 +130,25 @@ func (source *Database) EnableQueryFields(words ...string) {
 		for i := range source.Tables[idx].Fields {
 			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
 				source.Tables[idx].Fields[i].HasQuery = true
+			}
+		}
+	}
+}
+
+func (source *Database) EnableRequiredUpdateFields(words ...string) {
+	fields := make(map[string]bool, len(words))
+	for _, word := range words {
+		fields[word] = true
+	}
+
+	for idx := range source.Tables {
+		for i := range source.Tables[idx].Fields {
+			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
+				source.Tables[idx].RequiredUpdate = true
+				source.Tables[idx].Fields[i].RequiredUpdate = true
+				if source.Tables[idx].Fields[i].TypeOf() == "string" {
+					source.Tables[idx].UpdateTimeField = source.Tables[idx].Fields[i].Name
+				}
 			}
 		}
 	}
@@ -215,8 +245,7 @@ func (f *MetadataTable) id() string {
 
 func (m *MetadataTable) ExtractUpdateFieldFormat() (names, types, formats []string) {
 	for _, field := range m.Fields {
-		switch field.Name {
-		case "updated_by", "updated_at":
+		if field.RequiredUpdate {
 			names = append(names, field.Name)
 			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
 			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
@@ -238,7 +267,7 @@ func (m *MetadataTable) ExtractPrimaryFieldFormat() (names, types, formats []str
 
 func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, formats []string) {
 	for _, field := range m.Fields {
-		if field.PrimaryKey || strings.EqualFold(field.Name, "updated_by") || strings.EqualFold(field.Name, "updated_at") {
+		if field.PrimaryKey || field.RequiredUpdate {
 			names = append(names, field.Name)
 			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
 			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
@@ -249,9 +278,9 @@ func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, form
 
 func (f *Field) TypeOf() string {
 	switch f.DataType {
-	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+	case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 		return "int"
-	case "BIGINT":
+	case "INT", "BIGINT":
 		return "int64"
 	default:
 		return "string"
