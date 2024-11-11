@@ -247,7 +247,7 @@ func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir stri
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := "import (\n\t\"strconv\"\n\t\"fmt\"\n)"
+		importHead := "import (\n\t\"encoding/json\"\n\t\"strconv\"\n\t\"fmt\"\n)"
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendParseFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
