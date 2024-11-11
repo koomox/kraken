@@ -234,9 +234,9 @@ func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir stri
 	ch := make(chan error, 1)
 
 	go func(pkgName, fileName string){
-		b := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
-		b += "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
-		b += "func ParseInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
+		b := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n)\n\n", pkgName)
+		b += "func toInt(s string) int {\n\treturn int(toInt64(s))\n}\n\n"
+		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
 
 		ch <- WriteFile(b, fileName)
 	}(pkgName, path.Join(rootDir, pkgName, "common.go"))
@@ -247,7 +247,7 @@ func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir stri
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName)
+		importHead := "import (\n\t\"strconv\"\n\t\"fmt\"\n)"
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendParseFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
