@@ -229,7 +229,7 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 	fmt.Printf("[success]ExportFrontendColumnsFormatFile: %d\n", count)
 }
 
-func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir string, source *Database) {
+func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, rootDir string, source *Database) {
 	count := 1
 	ch := make(chan error, 1)
 
@@ -250,7 +250,7 @@ func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir stri
 		importHead := "import (\n\t\"encoding/json\"\n\t\"strconv\"\n\t\"fmt\"\n)"
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
-			b += data.ToForntendParseFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
+			b += data.ToForntendUnmarshalJSONFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
 			b += data.ToStructFormat(tagName, labelName)
 
 			ch <- WriteFile(b, fileName)

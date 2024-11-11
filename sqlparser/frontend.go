@@ -49,7 +49,7 @@ func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) string {
 	return fmt.Sprintf("export const %s = %s;", columnsName, string(b))
 }
 
-func (m *MetadataTable) ToForntendParseFormat(funcPrefix, structName, elementName string) (b string) {
+func (m *MetadataTable) ToForntendUnmarshalJSONFormat(funcPrefix, structName, elementName string) (b string) {
 	fieldsLen := len(m.Fields)
 	funcName := GenerateFunctionName(funcPrefix, m.Name)
 	var elements []string
