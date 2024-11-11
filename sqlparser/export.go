@@ -277,7 +277,7 @@ func ExportModelFormatFile(modName, componentName, pkgName, database, rootDir st
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database, source.Tables[i].ToLowerCase(), modName, component, database)
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database, source.Tables[i].ToLowerCase(), modName, componentName, database)
 		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, selectTableFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix) + "\n\n"
