@@ -130,12 +130,12 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	fmt.Printf("[success]ExportCrudFormatFile: %d\n", count)
 }
 
-func ExportStorageFormatFile(modName, componentName, pkgName, database, commonFile, rootDir string, source *Database) {
+func ExportStorageFormatFile(modName, componentName, pkgName, dbPackageName, commonFile, rootDir string, source *Database) {
 	store := "store"
 	Store := "Store"
-	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, componentName, database)
+	importHead := fmt.Sprintf("import (\n\t\"%s/%s/%s\"\n)", modName, componentName, dbPackageName)
 	values := fmt.Sprintf("package %s\n\nimport (\n\t\"encoding/json\"\n", pkgName)
-	values += fmt.Sprintf("\t\"%s/common/memory\"\n\t\"%s/%s/%s\"\n", modName, modName, componentName, database)
+	values += fmt.Sprintf("\t\"%s/common/memory\"\n\t\"%s/%s/%s\"\n", modName, modName, componentName, dbPackageName)
 
 	var importArray []string
 	var structArray []string
@@ -148,7 +148,7 @@ func ExportStorageFormatFile(modName, componentName, pkgName, database, commonFi
 			continue
 		}
 		count += 1
-		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, componentName, database, source.Tables[i].ToLowerCase()))
+		importArray = append(importArray, fmt.Sprintf("\t\"%s/%s/%s/%s\"\n", modName, componentName, dbPackageName, source.Tables[i].ToLowerCase()))
 		structArray = append(structArray, fmt.Sprintf("\t%s *%s.%s\n", source.Tables[i].ToUpperCase(), source.Tables[i].ToLowerCase(), Store))
 		updateArray = append(updateArray, fmt.Sprintf("\t%s.%s.UpdateTicker(datetime)\n", store, source.Tables[i].ToUpperCase()))
 
@@ -162,12 +162,12 @@ func ExportStorageFormatFile(modName, componentName, pkgName, database, commonFi
 		}
 
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		go func(pkgName, importHead, fromPrefix, selectPrefix, databasePrefix, storePrefix, StorePrefix, currentPrefix, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, fromPrefix, selectPrefix, dbPackageName, storePrefix, StorePrefix, currentPrefix, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
-			b += data.ToSelectStorageFuncFormat(fromPrefix, selectPrefix, databasePrefix, storePrefix, StorePrefix, currentPrefix)
+			b += data.ToSelectStorageFuncFormat(fromPrefix, selectPrefix, dbPackageName, storePrefix, StorePrefix, currentPrefix)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "From", "By", database, "store", "Store", "current", fName, source.Tables[i])
+		}(pkgName, importHead, "From", "By", dbPackageName, "store", "Store", "current", fName, source.Tables[i])
 	}
 
 	values += strings.Join(importArray, "")
@@ -268,7 +268,7 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 	fmt.Printf("[success]ExportForntendParseFormatFile: %d\n", count)
 }
 
-func ExportModelFormatFile(modName, componentName, pkgName, database, rootDir string, source *Database) {
+func ExportModelFormatFile(modName, componentName, pkgName, dbPackageName, rootDir string, source *Database) {
 	count := 0
 	ch := make(chan error, 1)
 	for i := range source.Tables {
@@ -277,20 +277,20 @@ func ExportModelFormatFile(modName, componentName, pkgName, database, rootDir st
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database, source.Tables[i].ToLowerCase(), modName, componentName, database)
-		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, selectTableFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, databasePrefix, fileName string, data *MetadataTable) {
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, dbPackageName, source.Tables[i].ToLowerCase(), modName, componentName, dbPackageName)
+		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, selectTableFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, dbPackageName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
-			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, databasePrefix) + "\n\n"
-			b += data.ToCompareModelFuncFormat(compareFunc, "element", databasePrefix) + "\n\n"
-			b += data.ToSelectTableModelFuncFormat(selectTableFunc, "Table", databasePrefix) + "\n\n"
+			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, dbPackageName) + "\n\n"
+			b += data.ToCompareModelFuncFormat(compareFunc, "element", dbPackageName) + "\n\n"
+			b += data.ToSelectTableModelFuncFormat(selectTableFunc, "Table", dbPackageName) + "\n\n"
 			b += data.ToUpdateModelFuncFormat(updateFunc) + "\n\n"
 			b += data.ToRemoveModelFuncFormat(removeFunc) + "\n\n"
-			b += data.ToWhereModelFuncFormat(whereFunc, databasePrefix) + "\n\n"
-			b += data.ToSelectModelFuncFormat(fromPrefix, selectPrefix, databasePrefix) + "\n"
+			b += data.ToWhereModelFuncFormat(whereFunc, dbPackageName) + "\n\n"
+			b += data.ToSelectModelFuncFormat(fromPrefix, selectPrefix, dbPackageName) + "\n"
 			b += data.ToSetModelFuncFormat(updateFunc, setFunc)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "Create", "Insert", "Compare", "Select", "Update", "Set", "Remove", "Where", "From", "By", database, fName, source.Tables[i])
+		}(pkgName, importHead, "Create", "Insert", "Compare", "Select", "Update", "Set", "Remove", "Where", "From", "By", dbPackageName, fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {
