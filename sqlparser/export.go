@@ -202,7 +202,7 @@ func ExportStorageFormatFile(modName, componentName, pkgName, database, commonFi
 	fmt.Printf("[success]ExportStorageFormatFile: %d\n", count)
 }
 
-func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database) {
+func ExportFrontendColumnsFormatFile(exportDir, rootDir string, source *Database) {
 	columnsName := "columnsIndex"
 	count := 0
 	ch := make(chan error, 1)
@@ -211,7 +211,7 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 			continue
 		}
 		count += 1
-		fName := path.Join(rootDir, commonDir, source.Tables[i].ToLowerCase()+".js")
+		fName := path.Join(rootDir, exportDir, source.Tables[i].ToLowerCase()+".js")
 		go func(columnsName, fileName string, data *MetadataTable) {
 			b := data.ToFrontendColumnsFormat(columnsName) + "\n\n"
 			ch <- WriteFile(b, fileName)
