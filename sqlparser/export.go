@@ -229,23 +229,32 @@ func ExportFrontendColumnsFormatFile(commonDir, rootDir string, source *Database
 	fmt.Printf("[success]ExportFrontendColumnsFormatFile: %d\n", count)
 }
 
-func ExportForntendParseFormatFile(modName, componentName, pkgName, database, rootDir string, source *Database) {
-	count := 0
+func ExportForntendParseFormatFile(modName, componentName, pkgName, rootDir string, source *Database) {
+	count := 1
 	ch := make(chan error, 1)
+
+	go func(pkgName, fileName string){
+		b := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
+		b += "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
+		b += "func ParseInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
+
+		ch <- WriteFile(b, fileName)
+	}(pkgName, path.Join(rootDir, pkgName, "common.go"))
+
 	for i := range source.Tables {
 		if source.Tables[i].Name == "" {
 			continue
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, database)
+		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName)
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
-			b += data.ToForntendParseFormat(funcPrefix+data.ToUpperCase(), data.ToUpperCase(), elementName) + "\n\n"
+			b += data.ToForntendParseFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
 			b += data.ToStructFormat(tagName, labelName)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "Parse", "element", "json", "label", fName, source.Tables[i])
+		}(pkgName, importHead, "UnmarshalJSONTo", "element", "json", "label", fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {

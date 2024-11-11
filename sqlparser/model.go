@@ -96,7 +96,7 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
 func (m *MetadataTable) ToSelectTableModelFuncFormat(selectFunc, tablePrefix, databasePrefix string) string {
 	funcName := fmt.Sprintf("%s%s%s", selectFunc, tablePrefix, m.ToUpperCase())
 
-	return fmt.Sprintf("func %s(%s) []*%s.%s {\n\treturn %s.%s()\n}", funcName, databasePrefix, m.ToUpperCase(), m.ToLowerCase(), selectFunc)
+	return fmt.Sprintf("func %s() []*%s.%s {\n\treturn %s.%s()\n}", funcName, databasePrefix, m.ToUpperCase(), m.ToLowerCase(), selectFunc)
 }
 
 func (m *MetadataTable) ToRemoveModelFuncFormat(removeFunc string) string {

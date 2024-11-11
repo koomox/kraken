@@ -49,19 +49,20 @@ func (m *MetadataTable) ToFrontendColumnsFormat(columnsName string) string {
 	return fmt.Sprintf("export const %s = %s;", columnsName, string(b))
 }
 
-func (m *MetadataTable) ToForntendParseFormat(funcName, structName, elementName string) (b string) {
+func (m *MetadataTable) ToForntendParseFormat(funcPrefix, structName, elementName string) (b string) {
 	fieldsLen := len(m.Fields)
+	funcName := GenerateFunctionName(funcPrefix, m.Name)
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
 		case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
-			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt(val)"))
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "toInt(val)"))
 		case "INT", "BIGINT":
-			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "database.ParseInt64(val)"))
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "toInt64(val)"))
 		default:
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "val"))
 		}
 	}
 
-	return fmt.Sprintf("func %s(m map[string]interface{}) (%s *%s) {\n\t%s = &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn\n}", funcName, elementName, structName, elementName, structName, strings.Join(elements, "\n"))
+	return fmt.Sprintf("func %s(data []byte) (*%s, error) {\n\tvar result map[string]interface{}\n\tif err := json.Unmarshal(data, &result); err != nil {\n\treturn nil, err\n\t}\n\t%s = &%s{}\n\tfor k, v := range result {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
 }
