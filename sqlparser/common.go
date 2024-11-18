@@ -265,19 +265,19 @@ func (m *MetadataTable) extractFieldFormat(filter func(field *Field) bool) (name
 	return names, types, formats
 }
 
-func (m *MetadataTable) ExtractUpdateFieldFormat() (names, types, formats []string) {
+func (m *MetadataTable) ExtractUpdateFieldFormat() ([]string, []string, []string) {
 	return m.extractFieldFormat(func(field *Field) bool{
 		return field.RequiredUpdate
 	})
 }
 
-func (m *MetadataTable) ExtractPrimaryFieldFormat() (names, types, formats []string) {
+func (m *MetadataTable) ExtractPrimaryFieldFormat() ([]string, []string, []string) {
 	return m.extractFieldFormat(func(field *Field) bool{
 		return field.PrimaryKey
 	})
 }
 
-func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, formats []string) {
+func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() ([]string, []string, []string) {
 	return m.extractFieldFormat(func(field *Field) bool{
 		return field.PrimaryKey || field.RequiredUpdate
 	})
