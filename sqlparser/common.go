@@ -105,6 +105,7 @@ type Field struct {
 	AutoIncrment bool
 	HasComment   bool
 	HasQuery     bool
+	HasIndex     bool
 	RequiredUpdate bool
 	RequiredCreated bool
 }
@@ -179,13 +180,32 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 	}
 }
 
-func (source *Database) EnableIndexFields(words map[string][][]string) {
+func (source *Database) EnableIndexFields(words map[string][]string) {
+	for i := range source.Tables {
+		if fields, found := words[source.Tables[i]]; found {
+			source.Tables[i].EnableIndexFields(fields...)
+		}
+	}
+}
+
+func (source *MetadataTable) EnableIndexFields(words ...string) {
+	fields := make(map[string]bool, len(words))
+	for _, word := range words {
+		fields[word] = true
+	}
+
+	for i := range source.Fields {
+		if _, found := fields[source.Fields[i].Name]; found {
+			source.Fields.HasIndex = true
+		}
+	}
+}
+
+func (source *Database) EnableMultiIndexFields(words map[string][][]string) {
 	for idx := range source.Tables {
-		for i := range words {
-			if strings.EqualFold(source.Tables[idx].Name, i) {
-				source.Tables[idx].HasIndex = true
-				source.Tables[idx].IndexFields = words[i]
-			}
+		if fields, found := words[source.Tables[i]]; found {
+			source.Tables[i].HasIndex = true
+			source.Tables[i].IndexFields = fields
 		}
 	}
 }
