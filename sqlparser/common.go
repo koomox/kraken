@@ -266,37 +266,33 @@ func (f *MetadataTable) id() string {
 	}
 }
 
-func (m *MetadataTable) ExtractUpdateFieldFormat() (names, types, formats []string) {
+func (m *MetadataTable) extractFieldFormat(filter func(field *Field) bool) (names, types, formats []string) {
 	for _, field := range m.Fields {
-		if field.RequiredUpdate {
+		if filter(field) {
 			names = append(names, field.Name)
 			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
 			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
 		}
 	}
 	return names, types, formats
+}
+
+func (m *MetadataTable) ExtractUpdateFieldFormat() (names, types, formats []string) {
+	return m.extractFieldFormat(func(field *Field) bool{
+		return field.RequiredUpdate
+	})
 }
 
 func (m *MetadataTable) ExtractPrimaryFieldFormat() (names, types, formats []string) {
-	for _, field := range m.Fields {
-		if field.PrimaryKey {
-			names = append(names, field.Name)
-			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
-			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
-		}
-	}
-	return names, types, formats
+	return m.extractFieldFormat(func(field *Field) bool{
+		return field.PrimaryKey
+	})
 }
 
 func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() (names, types, formats []string) {
-	for _, field := range m.Fields {
-		if field.PrimaryKey || field.RequiredUpdate {
-			names = append(names, field.Name)
-			types = append(types, fmt.Sprintf("%s %s", field.Name, field.TypeOf()))
-			formats = append(formats, fmt.Sprintf(`%s=%v`, field.Name, field.ValueOf()))
-		}
-	}
-	return names, types, formats
+	return m.extractFieldFormat(func(field *Field) bool{
+		return field.PrimaryKey || field.RequiredUpdate
+	})
 }
 
 func (f *Field) TypeOf() string {
