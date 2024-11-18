@@ -103,6 +103,7 @@ type Field struct {
 	AutoIncrment bool
 	HasComment   bool
 	HasQuery     bool
+	HasIndex     bool
 	RequiredUpdate bool
 	RequiredCreated bool
 }
