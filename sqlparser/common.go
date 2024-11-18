@@ -296,9 +296,9 @@ func (f *Field) TypeOf() string {
 
 func (f *Field) ValueOf() string {
 	switch f.DataType {
-	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+	case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
 		return "%v"
-	case "BIGINT":
+	case "INT", "BIGINT":
 		return "%v"
 	default:
 		return `"%v"`
