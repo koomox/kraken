@@ -92,6 +92,7 @@ type MetadataTable struct {
 	RequiredUpdate bool
 	RequiredCreated bool
 	UpdateTimeField string
+	HasIndex     bool
 	IndexFields [][]string
 }
 
@@ -104,7 +105,6 @@ type Field struct {
 	AutoIncrment bool
 	HasComment   bool
 	HasQuery     bool
-	HasIndex     bool
 	RequiredUpdate bool
 	RequiredCreated bool
 }
