@@ -235,35 +235,25 @@ func (f *MetadataTable) TypeOf() string {
 }
 
 func (f *MetadataTable) Id() string {
-	var ids []string
-	var idx []string
-	keys := f.PrimaryKey()
-	switch len(f.PrimaryKey()) {
-	case 1:
-		return fmt.Sprintf("element.%s", keys[0].ToUpperCase())
-	default:
-		for i := range keys {
-			ids = append(ids, "%v")
-			idx = append(idx, fmt.Sprintf("element.%s", keys[i].ToUpperCase()))
+	var names, formats []string
+	for _, field := range m.Fields {
+		if field.PrimaryKey {
+			names = append(names, fmt.Sprintf("element.%s", field.ToUpperCase()))
+			formats = append(formats, "%v")
 		}
-		return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(ids, "-"), strings.Join(idx, ", "))
 	}
+	return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(formats, "-"), strings.Join(names, ", "))
 }
 
 func (f *MetadataTable) id() string {
-	var ids []string
-	var idx []string
-	keys := f.PrimaryKey()
-	switch len(f.PrimaryKey()) {
-	case 1:
-		return fmt.Sprintf("%s", keys[0].ToLowerCase())
-	default:
-		for i := range keys {
-			ids = append(ids, "%v")
-			idx = append(idx, fmt.Sprintf("%s", keys[i].ToLowerCase()))
+	var names, formats []string
+	for _, field := range m.Fields {
+		if field.PrimaryKey {
+			names = append(names, fmt.Sprintf("%s", field.ToLowerCase()))
+			formats = append(formats, "%v")
 		}
-		return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(ids, "-"), strings.Join(idx, ", "))
 	}
+	return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(formats, "-"), strings.Join(names, ", "))
 }
 
 func (m *MetadataTable) extractFieldFormat(filter func(field *Field) bool) (names, types, formats []string) {
