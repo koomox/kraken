@@ -178,11 +178,9 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 }
 
 func (source *Database) HasField(name string) bool {
-	for idx := range source.Tables {
-		for i := range source.Tables[idx].Fields {
-			if strings.EqualFold(source.Tables[idx].Fields[i].Name, name) {
-				return true
-			}
+	for i := range source.Tables {
+		if source.Tables[i].HasField(name) {
+			return true
 		}
 	}
 	return false
