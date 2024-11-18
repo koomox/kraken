@@ -104,6 +104,7 @@ type Field struct {
 	AutoIncrment bool
 	HasComment   bool
 	HasQuery     bool
+	HasIndex     bool
 	RequiredUpdate bool
 	RequiredCreated bool
 }
@@ -173,6 +174,17 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
 				source.Tables[idx].RequiredCreated = true
 				source.Tables[idx].Fields[i].RequiredCreated = true
+			}
+		}
+	}
+}
+
+func (source *Database) EnableIndexFields(words map[string][][]string) {
+	for idx := range source.Tables {
+		for i := range words {
+			if strings.EqualFold(source.Tables[i].Name, i) {
+				source.Tables[i].HasIndex = true
+				source.Tables[i].IndexFields = words[i]
 			}
 		}
 	}
