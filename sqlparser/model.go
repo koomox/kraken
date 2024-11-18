@@ -101,7 +101,7 @@ func (m *MetadataTable) ToSelectTableModelFuncFormat(selectFunc, tablePrefix, da
 
 func (m *MetadataTable) ToRemoveModelFuncFormat(removeFunc string) string {
 	funcName := GenerateFunctionName(removeFunc, m.Name)
-	names, types, _ := m.ExtractPrimaryAndUpdateFieldFormat()
+	names, types, _ := m.ExtractPrimaryFieldFormat()
 
 	return fmt.Sprintf("func %s(%s) (sql.Result, error) {\n\treturn %s.%s(%s)\n}", funcName, strings.Join(types, ", "), m.ToLowerCase(), removeFunc, strings.Join(names, ", "))
 }
