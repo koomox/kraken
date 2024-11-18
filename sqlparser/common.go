@@ -182,9 +182,9 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 func (source *Database) EnableIndexFields(words map[string][][]string) {
 	for idx := range source.Tables {
 		for i := range words {
-			if strings.EqualFold(source.Tables[i].Name, i) {
-				source.Tables[i].HasIndex = true
-				source.Tables[i].IndexFields = words[i]
+			if strings.EqualFold(source.Tables[idx].Name, i) {
+				source.Tables[idx].HasIndex = true
+				source.Tables[idx].IndexFields = words[i]
 			}
 		}
 	}
