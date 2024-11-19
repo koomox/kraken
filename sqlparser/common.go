@@ -182,7 +182,7 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 
 func (source *Database) EnableIndexFields(words map[string][]string) {
 	for i := range source.Tables {
-		if fields, found := words[source.Tables[i]]; found {
+		if fields, found := words[source.Tables[i].Name]; found {
 			source.Tables[i].EnableIndexFields(fields...)
 		}
 	}
@@ -196,14 +196,14 @@ func (source *MetadataTable) EnableIndexFields(words ...string) {
 
 	for i := range source.Fields {
 		if _, found := fields[source.Fields[i].Name]; found {
-			source.Fields.HasIndex = true
+			source.Fields[i].HasIndex = true
 		}
 	}
 }
 
 func (source *Database) EnableMultiIndexFields(words map[string][][]string) {
-	for idx := range source.Tables {
-		if fields, found := words[source.Tables[i]]; found {
+	for i := range source.Tables {
+		if fields, found := words[source.Tables[i].Name]; found {
 			source.Tables[i].HasIndex = true
 			source.Tables[i].IndexFields = fields
 		}
@@ -265,7 +265,7 @@ func (f *MetadataTable) TypeOf() string {
 	}
 }
 
-func (f *MetadataTable) Id() string {
+func (m *MetadataTable) Id() string {
 	var names, formats []string
 	for _, field := range m.Fields {
 		if field.PrimaryKey {
@@ -276,7 +276,7 @@ func (f *MetadataTable) Id() string {
 	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", strings.Join(formats, "-"), strings.Join(names, ", "))
 }
 
-func (f *MetadataTable) id() string {
+func (m *MetadataTable) id() string {
 	var names, formats []string
 	for _, field := range m.Fields {
 		if field.PrimaryKey {
