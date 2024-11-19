@@ -273,7 +273,7 @@ func (f *MetadataTable) Id() string {
 			formats = append(formats, "%v")
 		}
 	}
-	return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(formats, "-"), strings.Join(names, ", "))
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", strings.Join(formats, "-"), strings.Join(names, ", "))
 }
 
 func (f *MetadataTable) id() string {
@@ -284,7 +284,7 @@ func (f *MetadataTable) id() string {
 			formats = append(formats, "%v")
 		}
 	}
-	return fmt.Sprintf("\"fmt.Sprintf(\"%s, %s\")\"", strings.Join(formats, "-"), strings.Join(names, ", "))
+	return fmt.Sprintf("fmt.Sprintf(\"%s\", %s)", strings.Join(formats, "-"), strings.Join(names, ", "))
 }
 
 func (m *MetadataTable) extractFieldFormat(filter func(field *Field) bool) (names, types, formats []string) {
