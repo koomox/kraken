@@ -234,9 +234,10 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 	ch := make(chan error, 1)
 
 	go func(pkgName, fileName string){
-		b := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n)\n\n", pkgName)
+		b := fmt.Sprintf("package %s\n\nimport(\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"strconv\"\n)\n\n", pkgName)
 		b += "func toInt(s string) int {\n\treturn int(toInt64(s))\n}\n\n"
 		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
+		b += "func UnmarshalAndTransform[T any](reader io.Reader, convert func(map[string]interface{}) T) (T, error) {\n\tresult := make(map[string]interface{})\n\tif err := json.NewDecoder(reader).Decode(&result); err != nil {\n\t\tvar zeroValue T\n\t\treturn zeroValue, fmt.Errorf(\"failed to decode JSON: %w\", err)\n\t}\n\n\treturn convert(result), nil\n}"
 
 		ch <- WriteFile(b, fileName)
 	}(pkgName, path.Join(rootDir, pkgName, "common.go"))
@@ -247,14 +248,14 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 		}
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
-		importHead := "import (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"strings\"\n)"
+		importHead := "import (\n\t\"fmt\"\n\t\"strings\"\n)"
 		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendUnmarshalJSONFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
 			b += data.ToStructFormat(tagName, labelName)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "UnmarshalJSONTo", "element", "json", "label", fName, source.Tables[i])
+		}(pkgName, importHead, "MapTo", "element", "json", "label", fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {

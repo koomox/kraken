@@ -64,5 +64,5 @@ func (m *MetadataTable) ToForntendUnmarshalJSONFormat(funcPrefix, structName, el
 		}
 	}
 
-	return fmt.Sprintf("func %s(data []byte) (*%s, error) {\n\tvar result map[string]interface{}\n\tif err := json.Unmarshal(data, &result); err != nil {\n\treturn nil, err\n\t}\n\t%s := &%s{}\n\tfor k, v := range result {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn %s, nil\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
+	return fmt.Sprintf("func %s(m map[string]interface{}) *%s {\n\t%s := &%s{}\n\tfor k, v := range result {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn %s, nil\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
 }
