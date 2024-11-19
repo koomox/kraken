@@ -236,7 +236,7 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 	go func(pkgName, fileName string){
 		b := fmt.Sprintf("package %s\n\nimport(\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"strconv\"\n)\n\n", pkgName)
 		b += "func toInt(s string) int {\n\treturn int(toInt64(s))\n}\n\n"
-		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
+		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}\n\n"
 		b += "func UnmarshalAndTransform[T any](reader io.Reader, convert func(map[string]interface{}) T) (T, error) {\n\tresult := make(map[string]interface{})\n\tif err := json.NewDecoder(reader).Decode(&result); err != nil {\n\t\tvar zeroValue T\n\t\treturn zeroValue, fmt.Errorf(\"failed to decode JSON: %w\", err)\n\t}\n\n\treturn convert(result), nil\n}"
 
 		ch <- WriteFile(b, fileName)
