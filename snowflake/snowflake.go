@@ -29,17 +29,23 @@ type Snowflake struct {
 	sequence     int64
 }
 
-var (
-	global = &Snowflake{timestamp: 0, workerid: 0, datacenterid: 0, sequence: 0}
-)
-
-func WithBackground(sf *Snowflake) *Snowflake {
-	global = sf
-	return global
+type snowflakeManager struct {
+	instance *Snowflake
 }
 
-func Background() *Snowflake {
-	return global
+var manager snowflakeManager
+
+func init() {
+	manager = snowflakeManager{instance: NewSnowflake(0, 0)}
+}
+
+func (m *snowflakeManager) getInstance() *Snowflake {
+	return m.instance
+}
+
+func (m *snowflakeManager) setInstance(sf *Snowflake) *Snowflake {
+	m.instance = sf
+	return m.instance
 }
 
 func NewSnowflake(datacenterid, workerid int64) *Snowflake {
@@ -74,6 +80,14 @@ func (s *Snowflake) NextID() int64 {
 	r := int64((t)<<timestampShift | (s.datacenterid << datacenteridShift) | (s.workerid << workeridShift) | (s.sequence))
 	s.Unlock()
 	return r
+}
+
+func Background() *Snowflake {
+	return manager.getInstance()
+}
+
+func WithBackground(sf *Snowflake) *Snowflake {
+	return manager.setInstance(sf)
 }
 
 func NextID() int64 {
