@@ -318,10 +318,12 @@ func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() ([]string, []string
 
 func (f *Field) TypeOf() string {
 	switch f.DataType {
-	case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+	case "TINYINT", "SMALLINT", "MEDIUMINT":
 		return "int"
 	case "INT", "BIGINT":
 		return "int64"
+	case "FLOAT", "DOUBLE", "DECIMAL":
+		return "float64"
 	default:
 		return "string"
 	}
@@ -329,9 +331,11 @@ func (f *Field) TypeOf() string {
 
 func (f *Field) ValueOf() string {
 	switch f.DataType {
-	case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+	case "TINYINT", "SMALLINT", "MEDIUMINT":
 		return "%v"
 	case "INT", "BIGINT":
+		return "%v"
+	case "FLOAT", "DOUBLE", "DECIMAL":
 		return "%v"
 	default:
 		return `"%v"`
