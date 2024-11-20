@@ -42,6 +42,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	values := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
 	parsetIntFormat := "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
 	parsetInt64Format := "func ParseInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
+	parsetFloatFormat := "func ParseFloat(s string) float64 {\n\td, err := strconv.ParseFloat(s, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
 	selectFormat := "func Select(table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v`, table)\n}"
 	whereFormat := "func Where(command string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE %v`, table, command)\n}"
 	updateTickerFormat := "func UpdateTicker(updated_at string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > \"%v\"`, table, updated_at)\n}"
@@ -106,6 +107,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 
 	values += parsetIntFormat + "\n\n"
 	values += parsetInt64Format + "\n\n"
+	values += parsetFloatFormat + "\n\n"
 	values += selectFormat + "\n\n"
 	values += whereFormat + "\n\n"
 	if source.HasField("updated_at") {
@@ -237,6 +239,7 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 		b := fmt.Sprintf("package %s\n\nimport(\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"strconv\"\n)\n\n", pkgName)
 		b += "func toInt(s string) int {\n\treturn int(toInt64(s))\n}\n\n"
 		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}\n\n"
+		b += "func toFloat(s string) float64 {\n\td, err := strconv.ParseFloat(s, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}\n\n"
 		b += "func UnmarshalAndTransform[T any](reader io.Reader, convert func(map[string]interface{}) T) (T, error) {\n\tresult := make(map[string]interface{})\n\tif err := json.NewDecoder(reader).Decode(&result); err != nil {\n\t\tvar zeroValue T\n\t\treturn zeroValue, fmt.Errorf(\"failed to decode JSON: %w\", err)\n\t}\n\n\treturn convert(result), nil\n}"
 
 		ch <- WriteFile(b, fileName)

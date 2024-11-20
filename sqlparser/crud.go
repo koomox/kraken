@@ -61,10 +61,12 @@ func (m *MetadataTable) ToParserSQLFormat(funcName, prefixName, structName, data
 	b += fmt.Sprintf("\treturn &%s{\n", structName)
 	for i := range m.Fields {
 		switch m.Fields[i].DataType {
-		case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		case "TINYINT", "SMALLINT", "MEDIUMINT":
 			b += fmt.Sprintf("\t\t%s:%s.ParseInt(%s[\"%s\"]),\n", m.Fields[i].ToUpperCase(), databasePrefix, prefixName, m.Fields[i].Name)
 		case "INT", "BIGINT":
 			b += fmt.Sprintf("\t\t%s:%s.ParseInt64(%s[\"%s\"]),\n", m.Fields[i].ToUpperCase(), databasePrefix, prefixName, m.Fields[i].Name)
+		case "FLOAT", "DOUBLE", "DECIMAL":
+			b += fmt.Sprintf("\t\t%s:%s.ParseFloat(%s[\"%s\"]),\n", m.Fields[i].ToUpperCase(), databasePrefix, prefixName, m.Fields[i].Name)
 		default:
 			b += fmt.Sprintf("\t\t%s:%s[\"%s\"],\n", m.Fields[i].ToUpperCase(), prefixName, m.Fields[i].Name)
 		}

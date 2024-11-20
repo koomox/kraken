@@ -55,14 +55,16 @@ func (m *MetadataTable) ToForntendUnmarshalJSONFormat(funcPrefix, structName, el
 	var elements []string
 	for i := 0; i < fieldsLen; i++ {
 		switch m.Fields[i].DataType {
-		case "TINYINT", "SMALLINT", "MEDIUMINT", "FLOAT", "DOUBLE":
+		case "TINYINT", "SMALLINT", "MEDIUMINT":
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "toInt(val)"))
 		case "INT", "BIGINT":
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "toInt64(val)"))
+		case "FLOAT", "DOUBLE", "DECIMAL":
+			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "toFloat(val)"))
 		default:
 			elements = append(elements, fmt.Sprintf("\t\tcase \"%s\":\n\t\t\t%s.%s = %s", m.Fields[i].Name, elementName, m.Fields[i].ToUpperCase(), "val"))
 		}
 	}
 
-	return fmt.Sprintf("func %s(m map[string]interface{}) *%s {\n\t%s := &%s{}\n\tfor k, v := range result {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn %s, nil\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
+	return fmt.Sprintf("func %s(m map[string]interface{}) *%s {\n\t%s := &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn %s\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
 }
