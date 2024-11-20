@@ -115,7 +115,7 @@ func (m *MetadataTable) ToStructFormat(tagField, labelField string) (b string) {
 }
 
 func (m *MetadataTable) ToStructSafeFormat(safeName, tagField, labelField string) (b string) {
-	b = fmt.Sprintf("type %v struct {\n", toFieldUpperFormat(m.Name))
+	b = fmt.Sprintf("type %s%s struct {\n", toFieldUpperFormat(m.Name), safeName)
 	for i := range m.Fields {
 		b += fmt.Sprintf("\t%v %v `%v:%v%v%v %v:%v%v%v`\n", m.Fields[i].ToUpperCase(), m.Fields[i].TypeSafeOf(), tagField, `"`, m.Fields[i].Name, `"`, labelField, `"`, m.Fields[i].Comment, `"`)
 	}

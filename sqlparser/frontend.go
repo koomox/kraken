@@ -87,5 +87,5 @@ func (m *MetadataTable) ToForntendSafeJSONFormat(funcName, safeName, structName,
 	}
 
 	safeStructName := fmt.Sprintf("%s%s", structName, safeName)
-	return fmt.Sprintf("func (%s *%s) %s() *%s {\n\treturn &%s{\n\t\t%s\n\t}\n}", elementName, structName, funcName, safeStructName, safeStructName,  strings.Join(elements, "\n\t\t"), elementName)
+	return fmt.Sprintf("func (%s *%s) %s() *%s {\n\treturn &%s{\n\t\t%s\n\t}\n}", elementName, structName, funcName, safeStructName, safeStructName,  strings.Join(elements, "\n\t\t"))
 }
