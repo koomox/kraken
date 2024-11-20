@@ -252,14 +252,15 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
 		importHead := "import (\n\t\"fmt\"\n\t\"strings\"\n)"
-		go func(pkgName, importHead, funcPrefix, elementName, safeName, tagName, labelName, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, funcPrefix, safeFunc, elementName, safeName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendUnmarshalJSONFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
+			b += data.ToForntendSafeJSONFormat(safeFunc, safeName, data.ToUpperCase(), elementName) + "\n\n"
 			b += data.ToStructFormat(tagName, labelName) + "\n\n"
 			b += data.ToStructSafeFormat(safeName, tagName, labelName)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "MapTo", "element", "Safe", "json", "label", fName, source.Tables[i])
+		}(pkgName, importHead, "MapTo", "ToSafe", "element", "Safe", "json", "label", fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {

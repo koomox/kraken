@@ -68,3 +68,24 @@ func (m *MetadataTable) ToForntendUnmarshalJSONFormat(funcPrefix, structName, el
 
 	return fmt.Sprintf("func %s(m map[string]interface{}) *%s {\n\t%s := &%s{}\n\tfor k, v := range m {\n\t\tval := strings.TrimSpace(fmt.Sprintf(\"%%v\", v))\n\t\tswitch k {\n%s\n\t\t}\n\t}\n\treturn %s\n}", funcName, structName, elementName, structName, strings.Join(elements, "\n"), elementName)
 }
+
+func (m *MetadataTable) ToForntendSafeJSONFormat(funcName, safeName, structName, elementName string) (b string) {
+	fieldsLen := len(m.Fields)
+	var elements []string
+	for i := 0; i < fieldsLen; i++ {
+		key := m.Fields[i].ToUpperCase()
+		switch m.Fields[i].DataType {
+		case "TINYINT", "SMALLINT", "MEDIUMINT":
+			elements = append(elements, fmt.Sprintf("\t\t%s:\t%s.%s,", key, elementName, key))
+		case "INT", "BIGINT":
+			elements = append(elements, fmt.Sprintf("\t\t%s:\tfmt.Sprintf(\"%%v\", %s.%s),", key, elementName, key))
+		case "FLOAT", "DOUBLE", "DECIMAL":
+			elements = append(elements, fmt.Sprintf("\t\t%s:\tfmt.Sprintf(\"%%v\", %s.%s),", key, elementName, key))
+		default:
+			elements = append(elements, fmt.Sprintf("\t\t%s:\t%s.%s,", key, elementName, key))
+		}
+	}
+
+	safeStructName := fmt.Sprintf("%s%s", structName, safeName)
+	return fmt.Sprintf("func (%s *%s) %s() *%s {\n\treturn &%s{\n\t\t%s\n\t}\n}", elementName, structName, funcName, safeStructName, safeStructName,  strings.Join(elements, "\n\t\t"), elementName)
+}
