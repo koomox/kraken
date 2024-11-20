@@ -17,28 +17,31 @@ func MkdirAll(p string) (err error) {
 	return
 }
 
-func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFile, storeFile, rootDir string, source *Database) {
-	if componentName == "" {
-		componentName = "components"
+func GetWithDefaultValue(value, defaultValue string) string {
+	if value == "" {
+		return defaultValue
 	}
-	if pkgName == "" {
-		pkgName = "databases"
-	}
-	if commandFile == "" {
-		commandFile = "command.go"
-	}
-	if commonFile == "" {
-		commonFile = "common.go"
-	}
-	if storeFile == "" {
-		storeFile = "store.go"
-	}
+	return value
+}
+
+func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFile, compareFile, cacheFile, safeFile, convertFile, rootDir string, source *Database) {
+	componentName = GetWithDefaultValue(componentName, "components")
+	pkgName = GetWithDefaultValue(pkgName, "databases")
+	commandFile = GetWithDefaultValue(commandFile, "command.go")
+	commonFile = GetWithDefaultValue(commonFile, "common.go")
+	compareFile = GetWithDefaultValue(compareFile, "compare.go")
+	cacheFile = GetWithDefaultValue(cacheFile, "cache.go")
+	safeFile = GetWithDefaultValue(safeFile, "safe.go")
+	convertFile = GetWithDefaultValue(convertFile, "convert.go")
+
 	pkgMod := fmt.Sprintf("%s/%s/%s", modName, componentName, pkgName)
 	sqlMod := fmt.Sprintf("%s/%s/%s", modName, componentName, "mysql")
 	commandImport := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s\"\n\t\"%s\"\n)", pkgMod, sqlMod)
 	commonImport := fmt.Sprintf("import (\n\t\"database/sql\"\n\t\"%s\"\n\t\"%s\"\n)", pkgMod, sqlMod)
-	storeImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s\"\n\t\"sync\"\n)", modName, pkgMod)
-	compare := fmt.Sprintf("package %v\n\n", pkgName)
+	cacheImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s\"\n\t\"sync\"\n)", modName, pkgMod)
+	safeHeader := fmt.Sprintf("package %v\n\n", pkgName)
+	convertHeader := fmt.Sprintf("package %v\n\nimport (\n\t\"fmt\"\n)\n\n", pkgName)
+	compareHeader := fmt.Sprintf("package %v\n\n", pkgName)
 	values := fmt.Sprintf("package %s\n\nimport(\n\t\"strconv\"\n\t\"fmt\"\n)", pkgName)
 	parsetIntFormat := "func ParseInt(s string) int {\n\treturn int(ParseInt64(s))\n}"
 	parsetInt64Format := "func ParseInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
@@ -47,8 +50,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	whereFormat := "func Where(command string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE %v`, table, command)\n}"
 	updateTickerFormat := "func UpdateTicker(updated_at string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > \"%v\"`, table, updated_at)\n}"
 	values += "\n\nconst (\n"
-	var structArray []string
-	var compareArray []string
+	var structArray, compareArray, safeArray, convertArray []string
 
 	count := 0
 	ch := make(chan error, 3)
@@ -61,11 +63,13 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 		tableName := fmt.Sprintf("%s.%sTable", pkgName, source.Tables[i].ToUpperCase())
 		values += fmt.Sprintf("\t%sTable=\"%s\"\n", source.Tables[i].ToUpperCase(), source.Tables[i].Name)
 		compareArray = append(compareArray, source.Tables[i].ToStructCompareFormat("s", "d", "Compare"))
+		safeArray = append(safeArray, source.Tables[i].ToStructSafeFormat("Safe", "json", "label"))
+		convertArray = append(convertArray, source.Tables[i].ToSafeFuncFormat("ToSafe", "Safe", source.Tables[i].ToUpperCase(), "data"))
 		structName := fmt.Sprintf("%s.%s", pkgName, source.Tables[i].ToUpperCase())
 		middleName := source.Tables[i].ToLowerCase()
 		commandFileName := path.Join(rootDir, pkgName, middleName, commandFile)
 		commonFileName := path.Join(rootDir, pkgName, middleName, commonFile)
-		storeFileName := path.Join(rootDir, pkgName, middleName, storeFile)
+		cacheFileName := path.Join(rootDir, pkgName, middleName, cacheFile)
 		go func(pkgName, importHead, queryFunc, parserFunc, structPrefix, structName, databasePrefix, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToSelectSQLFormat("selectTable") + "\n\n"
@@ -100,7 +104,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 			b += data.ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName)
 
 			ch <- WriteFile(b, fileName)
-		}(middleName, storeImport, "NewStore", "Mapping", "Select", "UpdateTicker", "Compare", "By", structName, "store", "Store", tableName, storeFileName, source.Tables[i])
+		}(middleName, cacheImport, "NewCache", "Mapping", "Select", "UpdateTicker", "Compare", "By", structName, "store", "Store", tableName, cacheFileName, source.Tables[i])
 	}
 
 	values += ")\n\n"
@@ -117,8 +121,14 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	if err := WriteFile(values, path.Join(rootDir, pkgName, commonFile)); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", commonFile, err)
 	}
-	if err := WriteFile(compare+strings.Join(compareArray, "\n\n"), path.Join(rootDir, pkgName, "compare.go")); err != nil {
-		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", "compare.go", err)
+	if err := WriteFile(compareHeader+strings.Join(compareArray, "\n\n"), path.Join(rootDir, pkgName, compareFile)); err != nil {
+		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", compareFile, err)
+	}
+	if err := WriteFile(safeHeader+strings.Join(safeArray, "\n\n"), path.Join(rootDir, pkgName, safeFile)); err != nil {
+		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", safeFile, err)
+	}
+	if err := WriteFile(convertHeader+strings.Join(convertArray, "\n\n"), path.Join(rootDir, pkgName, convertFile)); err != nil {
+		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", convertFile, err)
 	}
 
 	for i := 0; i < count; i++ {
@@ -252,15 +262,13 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
 		importHead := "import (\n\t\"fmt\"\n\t\"strings\"\n)"
-		go func(pkgName, importHead, funcPrefix, safeFunc, elementName, safeName, tagName, labelName, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, funcPrefix, elementName, tagName, labelName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToForntendUnmarshalJSONFormat(funcPrefix, data.ToUpperCase(), elementName) + "\n\n"
-			b += data.ToForntendSafeJSONFormat(safeFunc, safeName, data.ToUpperCase(), elementName) + "\n\n"
 			b += data.ToStructFormat(tagName, labelName) + "\n\n"
-			b += data.ToStructSafeFormat(safeName, tagName, labelName)
 
 			ch <- WriteFile(b, fileName)
-		}(pkgName, importHead, "MapTo", "ToSafe", "element", "Safe", "json", "label", fName, source.Tables[i])
+		}(pkgName, importHead, "MapTo", "element", "json", "label", fName, source.Tables[i])
 	}
 
 	for i := 0; i < count; i++ {
