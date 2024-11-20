@@ -329,6 +329,19 @@ func (f *Field) TypeOf() string {
 	}
 }
 
+func (f *Field) TypeSafeOf() string {
+	switch f.DataType {
+	case "TINYINT", "SMALLINT", "MEDIUMINT":
+		return "int"
+	case "INT", "BIGINT":
+		return "string"
+	case "FLOAT", "DOUBLE", "DECIMAL":
+		return "string"
+	default:
+		return "string"
+	}
+}
+
 func (f *Field) ValueOf() string {
 	switch f.DataType {
 	case "TINYINT", "SMALLINT", "MEDIUMINT":
