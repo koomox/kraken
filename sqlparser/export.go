@@ -38,7 +38,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	sqlMod := fmt.Sprintf("%s/%s/%s", modName, componentName, "mysql")
 	commandImport := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"%s\"\n\t\"%s\"\n)", pkgMod, sqlMod)
 	commonImport := fmt.Sprintf("import (\n\t\"database/sql\"\n\t\"%s\"\n\t\"%s\"\n)", pkgMod, sqlMod)
-	cacheImport := fmt.Sprintf("import (\n\t\"%s/common\"\n\t\"%s\"\n\t\"sync\"\n)", modName, pkgMod)
+	cacheImport := fmt.Sprintf("import (\n\t\"encoding/json\"\n\t\"%s\"\n\t\"sort\"\n\t\"sync\"\n)", pkgMod)
 	safeHeader := fmt.Sprintf("package %v\n\n", pkgName)
 	convertHeader := fmt.Sprintf("package %v\n\nimport (\n\t\"fmt\"\n)\n\n", pkgName)
 	compareHeader := fmt.Sprintf("package %v\n\n", pkgName)
@@ -99,12 +99,21 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 
 			ch <- WriteFile(b, fileName)
 		}(middleName, commonImport, "Insert", "Select", "Update", "UpdateTicker", "Remove", "Where", "By", "Set", "query", structName, pkgName, tableName, commonFileName, source.Tables[i])
-		go func(pkgName, importHead, newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName string, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, newFunc, selectFunc, syncFunc, compareFunc, subSelectFunc, cacheStructName, recordStructName, databasePrefix, tableName string, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
-			b += data.ToStoreFormat(newFunc, mapFunc, selectFunc, updateFunc, compareFunc, subSelectFunc, compareStruct, structPrefix, structName, tableName)
+			b += data.ToCacheStructFormat(cacheStructName, recordStructName, databasePrefix) + "\n\n"
+			b += data.ToRecordStructFormat(recordStructName, databasePrefix) + "\n\n"
+			b += data.ToNewCacheFuncFormat(newFunc, selectFunc, cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToSyncCacheFuncFormat(syncFunc, selectFunc, cacheStructName, recordStructName, databasePrefix) + "\n\n"
+			b += data.ToCompareCacheFuncFormat(compareFunc, compareFunc, cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToGetCacheFuncFormat("Get", cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToRemoveCacheFuncFormat("Remove", cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToValuesCacheFuncFormat("Values", cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToJSONCacheFuncFormat("ToJSON", "Values", cacheStructName) + "\n\n"
+			b += data.ToSubSelectCacheFuncFormat("By", cacheStructName, databasePrefix) + "\n\n"
 
 			ch <- WriteFile(b, fileName)
-		}(middleName, cacheImport, "NewCache", "Mapping", "Select", "UpdateTicker", "Compare", "By", structName, "store", "Store", tableName, cacheFileName, source.Tables[i])
+		}(middleName, cacheImport, "NewCache", "Select", "Sync", "Compare", "By", "Cache", "Record", pkgName, tableName, cacheFileName, source.Tables[i])
 	}
 
 	values += ")\n\n"
