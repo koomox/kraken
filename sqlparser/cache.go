@@ -131,6 +131,10 @@ func (m *MetadataTable) ToCompareCacheFuncFormat(funcName, compareFunc, cacheNam
 func (m *MetadataTable) ToSubSelectCacheFuncFormat(funcPrefix, cacheName, databasePrefix string) string {
 	var result []string
 	for i := range m.Fields {
+		if m.Fields[i].PrimaryKey {
+			result = append(result, fmt.Sprintf("func (cache *%s) %s%s(%s %s) *%s.%s {\n\tif el, found := cache.records[%s]; found {\n\t\treturn el\n\t}\n\treturn nil\n}", cacheName, funcPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].Name, m.Fields[i].TypeOf(), databasePrefix, m.ToUpperCase(), m.Fields[i].Name))
+			continue
+		}
 		if m.Fields[i].HasIndex {
 			result = append(result, fmt.Sprintf("func (cache *%s) %s%s(key %s) *%s.%s {\n\tif el, found := cache.%s[key]; found {\n\t\treturn el\n\t}\n\treturn nil\n}", cacheName, funcPrefix, m.Fields[i].ToUpperCase(), m.Fields[i].TypeOf(), databasePrefix, m.ToUpperCase(), m.Fields[i].Name))
 		}
