@@ -227,6 +227,7 @@ func FromFile(filename string) (source *Database) {
 	source.EnableQueryFields(queryKeywords...)
 	source.EnableRequiredUpdateFields(requiredUpdateKeywords...)
 	source.EnableRequiredCreatedFields(requiredCreatedKeywords...)
+	source.EnableRequiredDatetimeFields()
 
 	return
 }

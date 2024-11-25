@@ -10,6 +10,7 @@ func (m *MetadataTable) ToCacheStructFormat(cacheName, recordName, databasePrefi
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
 			b += fmt.Sprintf("records map[%s]*%s.%s\n\t", m.Fields[i].TypeOf(), databasePrefix, m.ToUpperCase())
+			b += fmt.Sprintf("data []*%s.%s\n\t", databasePrefix, m.ToUpperCase())
 			continue
 		}
 		if m.Fields[i].HasIndex {
@@ -50,7 +51,7 @@ func (m *MetadataTable) ToNewCacheFuncFormat(funcName, selectFunc, structName, d
 			continue
 		}
 	}
-	b += "\t}\n\treturn data\n}"
+	b += "\t}\n\tvalues := data.Values()\n\tdata.data = values\n\treturn data\n}"
 	return
 }
 
@@ -109,7 +110,7 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 		}
 	}
 
-	b += "}"
+	b += "\n\tvalues := cache.Values()\n\tcache.data = values\n}"
 
 	return
 }
@@ -135,4 +136,8 @@ func (m *MetadataTable) ToSubSelectCacheFuncFormat(funcPrefix, cacheName, databa
 		}
 	}
 	return strings.Join(result, "\n\n")
+}
+
+func (m *MetadataTable) ToDataCacheFuncFormat(funcName, cacheName, databasePrefix string) string {
+	return fmt.Sprintf("func (cache *%s) %s() []*%s.%s {\n\treturn cache.data\n}", cacheName, funcName, databasePrefix, m.ToUpperCase())
 }

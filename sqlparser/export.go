@@ -48,7 +48,6 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	parsetFloatFormat := "func ParseFloat(s string) float64 {\n\td, err := strconv.ParseFloat(s, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}"
 	selectFormat := "func Select(table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v`, table)\n}"
 	whereFormat := "func Where(command string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE %v`, table, command)\n}"
-	updateTickerFormat := "func UpdateTicker(updated_at string, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %v WHERE updated_at > \"%v\"`, table, updated_at)\n}"
 	values += "\n\nconst (\n"
 	var structArray, compareArray, safeArray, convertArray []string
 
@@ -84,21 +83,18 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 
 			ch <- WriteFile(b, fileName)
 		}(middleName, commandImport, "query", "parser", "element", structName, pkgName, commandFileName, source.Tables[i])
-		go func(pkgName, importHead, InsertFunc, SelectFunc, UpdateFunc, UpdateTickerFunc, RemoveFunc, WhereFunc, ByFunc, SetFunc, queryFunc, structName, databasePrefix, tableName, fileName string, data *MetadataTable) {
+		go func(pkgName, importHead, InsertFunc, SelectFunc, UpdateFunc, RemoveFunc, WhereFunc, ByFunc, SetFunc, queryFunc, structName, databasePrefix, tableName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToInsertCrudFormat(InsertFunc, "insert", "element", structName, tableName) + "\n\n"
 			b += data.ToSelectCrudFormat(SelectFunc, queryFunc, "selectTable", structName, tableName) + "\n\n"
 			b += data.ToUpdateCrudFormat(UpdateFunc, "update", tableName) + "\n\n"
-			if data.HasField("updated_at") {
-				b += data.ToUpdateTickerCrudFormat(UpdateTickerFunc, queryFunc, fmt.Sprintf("%s.%s", databasePrefix, UpdateTickerFunc), structName, tableName) + "\n\n"
-			}
 			b += data.ToRemoveCrudFormat(RemoveFunc, "remove", tableName) + "\n\n"
 			b += data.ToWhereCrudFormat(WhereFunc, queryFunc, "where", structName, tableName) + "\n\n"
 			b += data.ToSubSelectCrudFormat(ByFunc, queryFunc, "by", structName, tableName)
 			b += data.ToSetCrudFormat(SetFunc, "set", tableName) + "\n\n"
 
 			ch <- WriteFile(b, fileName)
-		}(middleName, commonImport, "Insert", "Select", "Update", "UpdateTicker", "Remove", "Where", "By", "Set", "query", structName, pkgName, tableName, commonFileName, source.Tables[i])
+		}(middleName, commonImport, "Insert", "Select", "Update", "Remove", "Where", "By", "Set", "query", structName, pkgName, tableName, commonFileName, source.Tables[i])
 		go func(pkgName, importHead, newFunc, selectFunc, syncFunc, compareFunc, subSelectFunc, cacheStructName, recordStructName, databasePrefix, tableName string, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToCacheStructFormat(cacheStructName, recordStructName, databasePrefix) + "\n\n"
@@ -111,6 +107,7 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 			b += data.ToValuesCacheFuncFormat("Values", cacheStructName, databasePrefix) + "\n\n"
 			b += data.ToJSONCacheFuncFormat("ToJSON", "Values", cacheStructName) + "\n\n"
 			b += data.ToSubSelectCacheFuncFormat("By", cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToDataCacheFuncFormat("Data", cacheStructName, databasePrefix) + "\n\n"
 
 			ch <- WriteFile(b, fileName)
 		}(middleName, cacheImport, "NewCache", "Select", "Sync", "Compare", "By", "Cache", "Record", pkgName, tableName, cacheFileName, source.Tables[i])
@@ -123,9 +120,6 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 	values += parsetFloatFormat + "\n\n"
 	values += selectFormat + "\n\n"
 	values += whereFormat + "\n\n"
-	if source.HasField("updated_at") {
-		values += updateTickerFormat + "\n\n"
-	}
 	values += strings.Join(structArray, "\n\n")
 	if err := WriteFile(values, path.Join(rootDir, pkgName, commonFile)); err != nil {
 		fmt.Printf("[%s]ExportCrudFormatFile: %v\n", commonFile, err)
@@ -254,7 +248,7 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 	count := 1
 	ch := make(chan error, 1)
 
-	go func(pkgName, fileName string){
+	go func(pkgName, fileName string) {
 		b := fmt.Sprintf("package %s\n\nimport(\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"strconv\"\n)\n\n", pkgName)
 		b += "func toInt(s string) int {\n\treturn int(toInt64(s))\n}\n\n"
 		b += "func toInt64(s string) int64 {\n\td, err := strconv.ParseInt(s, 10, 64)\n\tif err != nil {\n\t\treturn 0\n\t}\n\treturn d\n}\n\n"
@@ -294,6 +288,15 @@ func ExportForntendUnmarshalJSONFormatFile(modName, componentName, pkgName, root
 func ExportModelFormatFile(modName, componentName, pkgName, dbPackageName, rootDir string, source *Database) {
 	count := 0
 	ch := make(chan error, 1)
+	go func(pkgName, fileName string) {
+		b := fmt.Sprintf("package %s\n\nimport(\n\t\"time\"\n\t\"fmt\"\n)\n\n", pkgName)
+		b += "func FormatTimeWithOffset(offset time.Duration, timezone, format string) (string, error) {\n"
+		b += "\tloc, err := time.LoadLocation(timezone)\n"
+		b += "\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"invalid timezone: %v\", err)\n\t}\n\n\tnow := time.Now().In(loc).Add(offset)\n\n\treturn now.Format(format), nil\n}"
+
+		ch <- WriteFile(b, fileName)
+	}(pkgName, path.Join(rootDir, pkgName, "common.go"))
+
 	for i := range source.Tables {
 		if source.Tables[i].Name == "" {
 			continue
@@ -301,6 +304,9 @@ func ExportModelFormatFile(modName, componentName, pkgName, dbPackageName, rootD
 		count += 1
 		fName := path.Join(rootDir, pkgName, source.Tables[i].ToLowerCase()+".go")
 		importHead := fmt.Sprintf("import (\n\t\"fmt\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, dbPackageName, source.Tables[i].ToLowerCase(), modName, componentName, dbPackageName)
+		if source.Tables[i].RequiredDatetime {
+			importHead = fmt.Sprintf("import (\n\t\"fmt\"\n\t\"time\"\n\t\"database/sql\"\n\t\"%s/%s/%s/%s\"\n\t\"%s/%s/%s\"\n\t\"strings\"\n)", modName, componentName, dbPackageName, source.Tables[i].ToLowerCase(), modName, componentName, dbPackageName)
+		}
 		go func(pkgName, importHead, createFunc, insertFunc, compareFunc, selectTableFunc, updateFunc, setFunc, removeFunc, whereFunc, fromPrefix, selectPrefix, dbPackageName, fileName string, data *MetadataTable) {
 			b := fmt.Sprintf("package %s\n\n%s\n\n", pkgName, importHead)
 			b += data.ToCreateModelFuncFormat(createFunc, insertFunc, dbPackageName) + "\n\n"

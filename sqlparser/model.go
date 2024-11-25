@@ -65,7 +65,7 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
 	for i := 0; i < fieldsLen; i++ {
 		if !m.Fields[i].PrimaryKey && !m.Fields[i].RequiredUpdate {
 			continue
-		} 
+		}
 
 		if m.Fields[i].RequiredUpdate {
 			if m.Fields[i].TypeOf() == "string" {
@@ -73,8 +73,8 @@ func (m *MetadataTable) ToUpdateModelFuncFormat(updateFunc string) (b string) {
 			} else {
 				params = append(params, fmt.Sprintf("\tcommand += fmt.Sprintf(`, %s=%%v`, %s)", m.Fields[i].Name, m.Fields[i].Name))
 			}
-		} 
-		
+		}
+
 		if m.Fields[i].PrimaryKey {
 			keys = append(keys, m.Fields[i].Name)
 		}
@@ -123,15 +123,22 @@ func (m *MetadataTable) ToSelectModelFuncFormat(fromPrefix, selectPrefix, databa
 
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
+			funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, "Limit")
+			params = append(params, fmt.Sprintf("func %s(%s int) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, "limit", structName, m.ToLowerCase(), selectPrefix, "Limit", "limit"))
 			continue
 		}
-		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
+		if m.Fields[i].HasQuery || m.Fields[i].Unique || m.Fields[i].RequiredCreated || m.Fields[i].RequiredUpdate {
 			key := m.Fields[i].Name
 			if m.Fields[i].Name == m.Name {
 				key = fmt.Sprintf("%sed", m.Fields[i].Name)
 			}
 			funcName := fmt.Sprintf("%s%s%s%s", fromPrefix, m.ToUpperCase(), selectPrefix, m.Fields[i].ToUpperCase())
-			params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, key, m.Fields[i].TypeOf(), structName, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), key))
+			if m.Fields[i].DataType == "DATETIME" || m.Fields[i].DataType == "DATE" {
+				params = append(params, fmt.Sprintf("func %s(offset time.Duration, timezone, format string) []*%s {\n\t%s, err := FormatTimeWithOffset(offset, timezone, format)\n\tif err != nil {\n\t\treturn nil\n\t}\n\n\treturn %s.%s%s(%s)\n}", funcName, structName, key, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), key))
+			} else {
+				params = append(params, fmt.Sprintf("func %s(%s %s) []*%s {\n\treturn %s.%s%s(%s)\n}", funcName, key, m.Fields[i].TypeOf(), structName, m.ToLowerCase(), selectPrefix, m.Fields[i].ToUpperCase(), key))
+			}
+
 		}
 	}
 

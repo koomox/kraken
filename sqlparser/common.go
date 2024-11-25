@@ -87,27 +87,29 @@ type Database struct {
 }
 
 type MetadataTable struct {
-	Name   string
-	Fields []*Field
-	RequiredUpdate bool
-	RequiredCreated bool
-	UpdateTimeField string
-	HasIndex     bool
-	IndexFields [][]string
+	Name             string
+	Fields           []*Field
+	RequiredUpdate   bool
+	RequiredCreated  bool
+	RequiredDatetime bool
+	UpdateTimeField  string
+	HasIndex         bool
+	IndexFields      [][]string
 }
 
 type Field struct {
-	Name         string
-	DataType     string
-	Comment      string
-	Unique       bool
-	PrimaryKey   bool
-	AutoIncrment bool
-	HasComment   bool
-	HasQuery     bool
-	HasIndex     bool
-	RequiredUpdate bool
-	RequiredCreated bool
+	Name             string
+	DataType         string
+	Comment          string
+	Unique           bool
+	PrimaryKey       bool
+	AutoIncrment     bool
+	HasComment       bool
+	HasQuery         bool
+	HasIndex         bool
+	RequiredUpdate   bool
+	RequiredCreated  bool
+	RequiredDatetime bool
 }
 
 func (source *Database) ToString() (s string) {
@@ -175,6 +177,17 @@ func (source *Database) EnableRequiredCreatedFields(words ...string) {
 			if _, found := fields[source.Tables[idx].Fields[i].Name]; found {
 				source.Tables[idx].RequiredCreated = true
 				source.Tables[idx].Fields[i].RequiredCreated = true
+			}
+		}
+	}
+}
+
+func (source *Database) EnableRequiredDatetimeFields() {
+	for idx := range source.Tables {
+		for i := range source.Tables[idx].Fields {
+			if source.Tables[idx].Fields[i].DataType == "DATETIME" || source.Tables[idx].Fields[i].DataType == "DATE" {
+				source.Tables[idx].RequiredDatetime = true
+				source.Tables[idx].Fields[i].RequiredDatetime = true
 			}
 		}
 	}
@@ -299,19 +312,19 @@ func (m *MetadataTable) extractFieldFormat(filter func(field *Field) bool) (name
 }
 
 func (m *MetadataTable) ExtractUpdateFieldFormat() ([]string, []string, []string) {
-	return m.extractFieldFormat(func(field *Field) bool{
+	return m.extractFieldFormat(func(field *Field) bool {
 		return field.RequiredUpdate
 	})
 }
 
 func (m *MetadataTable) ExtractPrimaryFieldFormat() ([]string, []string, []string) {
-	return m.extractFieldFormat(func(field *Field) bool{
+	return m.extractFieldFormat(func(field *Field) bool {
 		return field.PrimaryKey
 	})
 }
 
 func (m *MetadataTable) ExtractPrimaryAndUpdateFieldFormat() ([]string, []string, []string) {
-	return m.extractFieldFormat(func(field *Field) bool{
+	return m.extractFieldFormat(func(field *Field) bool {
 		return field.PrimaryKey || field.RequiredUpdate
 	})
 }

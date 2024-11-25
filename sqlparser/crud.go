@@ -83,11 +83,17 @@ func (m *MetadataTable) ToSubSelectSQLFormat(prefixFunc string) (b string) {
 
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
+			b += fmt.Sprintf("func %s(limit int, table string) string {\n\treturn fmt.Sprintf(`SELECT * FROM %%s ORDER BY %s DESC LIMIT %%d`, table, limit)\n}\n\n", GenerateFunctionName(prefixFunc, "Limit"), m.Fields[i].Name)
 			continue
 		}
-		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
-			b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
-			b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s=%s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
+		if m.Fields[i].HasQuery || m.Fields[i].Unique || m.Fields[i].RequiredCreated || m.Fields[i].RequiredUpdate {
+			if m.Fields[i].DataType == "DATETIME" || m.Fields[i].DataType == "DATE" {
+				b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
+				b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s >= %s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
+			} else {
+				b += fmt.Sprintf("func %s(%s %s, table string) string {\n", GenerateFunctionName(prefixFunc, m.Fields[i].Name), m.Fields[i].Name, m.Fields[i].TypeOf())
+				b += fmt.Sprintf("\treturn fmt.Sprintf(`SELECT * FROM %%s WHERE %s=%s`, table, %s)\n}\n\n", m.Fields[i].Name, m.Fields[i].ValueOf(), m.Fields[i].Name)
+			}
 		}
 	}
 	return
@@ -124,9 +130,11 @@ func (m *MetadataTable) ToSubSelectCrudFormat(prefixFunc, queryFunc, subPrefixFu
 
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
+			b += fmt.Sprintf("func %s(limit int) []*%s {\n", GenerateFunctionName(prefixFunc, "Limit"), structName)
+			b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, "Limit"), "limit", tableName)
 			continue
 		}
-		if m.Fields[i].RequiredCreated || m.Fields[i].HasQuery || m.Fields[i].Unique {
+		if m.Fields[i].HasQuery || m.Fields[i].Unique || m.Fields[i].RequiredCreated || m.Fields[i].RequiredUpdate {
 			b += fmt.Sprintf("func %s(%s %s) []*%s {\n", GenerateFunctionName(prefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, m.Fields[i].TypeOf(), structName)
 			b += fmt.Sprintf("\treturn %s(%s(%s, %s))\n}\n\n", queryFunc, GenerateFunctionName(subPrefixFunc, m.Fields[i].ToUpperCase()), m.Fields[i].Name, tableName)
 		}
@@ -206,5 +214,5 @@ func (m *MetadataTable) ToSafeFuncFormat(funcName, safeName, structName, element
 	}
 
 	safeStructName := fmt.Sprintf("%s%s", structName, safeName)
-	return fmt.Sprintf("func (%s *%s) %s() *%s {\n\treturn &%s{\n\t\t%s\n\t}\n}", elementName, structName, funcName, safeStructName, safeStructName,  strings.Join(elements, "\n\t\t"))
+	return fmt.Sprintf("func (%s *%s) %s() *%s {\n\treturn &%s{\n\t\t%s\n\t}\n}", elementName, structName, funcName, safeStructName, safeStructName, strings.Join(elements, "\n\t\t"))
 }
