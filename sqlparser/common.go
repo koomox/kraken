@@ -349,7 +349,7 @@ func (f *Field) TypeSafeOf() string {
 	case "INT", "BIGINT":
 		return "string"
 	case "FLOAT", "DOUBLE", "DECIMAL":
-		return "string"
+		return "float64"
 	default:
 		return "string"
 	}

@@ -207,7 +207,7 @@ func (m *MetadataTable) ToSafeFuncFormat(funcName, safeName, structName, element
 		case "INT", "BIGINT":
 			elements = append(elements, fmt.Sprintf("\t\t%s:\tfmt.Sprintf(\"%%v\", %s.%s),", key, elementName, key))
 		case "FLOAT", "DOUBLE", "DECIMAL":
-			elements = append(elements, fmt.Sprintf("\t\t%s:\tfmt.Sprintf(\"%%v\", %s.%s),", key, elementName, key))
+			elements = append(elements, fmt.Sprintf("\t\t%s:\t%s.%s,", key, elementName, key))
 		default:
 			elements = append(elements, fmt.Sprintf("\t\t%s:\t%s.%s,", key, elementName, key))
 		}
