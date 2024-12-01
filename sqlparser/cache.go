@@ -13,12 +13,12 @@ func (m *MetadataTable) ToCacheStructFormat(cacheName, recordName, databasePrefi
 			b += fmt.Sprintf("data []*%s.%s\n\t", databasePrefix, m.ToUpperCase())
 			continue
 		}
-		if m.Fields[i].HasIndex {
+		if m.Fields[i].HasIndex || m.Fields[i].Unique {
 			b += fmt.Sprintf("%s map[%s]*%s.%s\n\t", m.Fields[i].Name, m.Fields[i].TypeOf(), databasePrefix, m.ToUpperCase())
 			continue
 		}
 	}
-	b += fmt.Sprintf("rawData []byte\n\tversion string\nchanges []*%s\n}", recordName)
+	b += fmt.Sprintf("rawData []byte\n\tversion string\n\tchanges []*%s\n}", recordName)
 	return b
 }
 
@@ -46,7 +46,7 @@ func (m *MetadataTable) ToNewCacheFuncFormat(funcName, selectFunc, structName, d
 			b += fmt.Sprintf("\t\tdata.records[el.%s] = el\n", m.Fields[i].ToUpperCase())
 			continue
 		}
-		if m.Fields[i].HasIndex {
+		if m.Fields[i].HasIndex || m.Fields[i].Unique {
 			b += fmt.Sprintf("\t\tdata.%s[el.%s] = el\n", m.Fields[i].Name, m.Fields[i].ToUpperCase())
 			continue
 		}
@@ -101,15 +101,41 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 			b += fmt.Sprintf("\tfor _, item := range result {\n\t\telements[%s] = item\n\t}\n\thasChanges := false\n\tcache.changes = cache.changes[:0]\n", key)
 			b += fmt.Sprintf("\tfor _, item := range elements {\n\t\tif el, found := cache.records[%s]; found {\n\t\t\tif cache.Compare(el) {\n\t\t\t\thasChanges = true\n\t\t\t\tcache.changes = append(cache.changes, &%s{Action: \"update\", Record: item})\n\t\t\t}\n\t\t} else {\n\t\t\thasChanges = true\n\t\t\tcache.changes = append(cache.changes, &%s{Action: \"add\", Record: item})\n\t\t}\n\t}\n", key, recordName, recordName)
 			b += fmt.Sprintf("\tfor _, item := range cache.records {\n\t\tif _, found := elements[%s]; !found {\n\t\t\thasChanges = true\n\t\t\tcache.changes = append(cache.changes, &%s{Action: \"remove\", Record: item})\n\t\t}\n\t}\n", key, recordName)
-			b += "\tif !hasChanges {\n\treturn\n\t}\n"
-			b += "\tcache.Lock()\n\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n\t\tcase \"add\":\n"
-			b += fmt.Sprintf("\t\t\tcache.records[change.Record.%s] = change.Record\n", m.Fields[i].ToUpperCase())
-			b += fmt.Sprintf("\t\tcase \"update\":\n\t\t\tcache.records[change.Record.%s] = change.Record\n", m.Fields[i].ToUpperCase())
-			b += fmt.Sprintf("\t\tcase \"remove\":\n\t\t\tdelete(cache.records, change.Record.%s)\n", m.Fields[i].ToUpperCase())
-			b += "\t\t}\n\t}\n\tcache.Unlock()\n"
 		}
 	}
-
+	b += "\tif !hasChanges {\n\treturn\n\t}\n"
+	b += "\tcache.Lock()\n\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n"
+	for i := range m.Fields {
+		if m.Fields[i].PrimaryKey {
+			b += "\t\tcase \"add\":\n"
+			b += fmt.Sprintf("\t\t\tcache.records[change.Record.%s] = change.Record\n", m.Fields[i].ToUpperCase())
+			continue
+		}
+		if m.Fields[i].HasIndex || m.Fields[i].Unique {
+			b += fmt.Sprintf("\t\t\tcache.%s[change.Record.%s] = change.Record\n", m.Fields[i].Name, m.Fields[i].ToUpperCase())
+		}
+	}
+	for i := range m.Fields {
+		if m.Fields[i].PrimaryKey {
+			b += "\t\tcase \"update\":\n"
+			b += fmt.Sprintf("\t\t\tcache.records[change.Record.%s] = change.Record\n", m.Fields[i].ToUpperCase())
+			continue
+		}
+		if m.Fields[i].HasIndex || m.Fields[i].Unique {
+			b += fmt.Sprintf("\t\t\tcache.%s[change.Record.%s] = change.Record\n", m.Fields[i].Name, m.Fields[i].ToUpperCase())
+		}
+	}
+	for i := range m.Fields {
+		if m.Fields[i].PrimaryKey {
+			b += "\t\tcase \"remove\":\n"
+			b += fmt.Sprintf("\t\t\tdelete(cache.records, change.Record.%s)\n", m.Fields[i].ToUpperCase())
+			continue
+		}
+		if m.Fields[i].HasIndex || m.Fields[i].Unique {
+			b += fmt.Sprintf("\t\t\tdelete(cache.%s, change.Record.%s)\n", m.Fields[i].Name, m.Fields[i].ToUpperCase())
+		}
+	}
+	b += "\t\t}\n\t}\n\tcache.Unlock()\n"
 	b += "\n\tvalues := cache.Values()\n\tcache.data = values\n}"
 
 	return
