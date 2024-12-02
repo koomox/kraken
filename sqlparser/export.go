@@ -102,6 +102,8 @@ func ExportCrudFormatFile(modName, componentName, pkgName, commandFile, commonFi
 			b += data.ToNewCacheFuncFormat(newFunc, selectFunc, cacheStructName, databasePrefix) + "\n\n"
 			b += data.ToSyncCacheFuncFormat(syncFunc, selectFunc, cacheStructName, recordStructName, databasePrefix) + "\n\n"
 			b += data.ToCompareCacheFuncFormat(compareFunc, compareFunc, cacheStructName, databasePrefix) + "\n\n"
+			b += data.ToResetUpdatedCacheFuncFormat("ResetUpdated", cacheStructName) + "\n\n"
+			b += data.ToIsUpdatedCacheFuncFormat("IsUpdated", cacheStructName) + "\n\n"
 			b += data.ToGetCacheFuncFormat("Get", cacheStructName, databasePrefix) + "\n\n"
 			b += data.ToRemoveCacheFuncFormat("Remove", cacheStructName, databasePrefix) + "\n\n"
 			b += data.ToValuesCacheFuncFormat("Values", cacheStructName, databasePrefix) + "\n\n"

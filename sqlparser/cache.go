@@ -18,7 +18,7 @@ func (m *MetadataTable) ToCacheStructFormat(cacheName, recordName, databasePrefi
 			continue
 		}
 	}
-	b += fmt.Sprintf("rawData []byte\n\tversion string\n\tchanges []*%s\n}", recordName)
+	b += fmt.Sprintf("rawData []byte\n\tversion string\n\tchanges []*%s\n\tupdated bool\n}", recordName)
 	return b
 }
 
@@ -37,7 +37,7 @@ func (m *MetadataTable) ToNewCacheFuncFormat(funcName, selectFunc, structName, d
 			b += fmt.Sprintf("\t\t%s: make(map[%s]*%s.%s),\n", m.Fields[i].Name, m.Fields[i].TypeOf(), databasePrefix, m.ToUpperCase())
 		}
 	}
-	b += "\t\tversion: \"\",\n\t}\n"
+	b += "\t\tversion: \"\",\n\t\tupdated: false,\n\t}\n"
 	b += fmt.Sprintf("\telements := %s()\n", selectFunc)
 	b += "\tif elements == nil || len(elements) <= 0 {\n\t\treturn data\n\t}\n"
 	b += "\tfor _, el := range elements {\n"
@@ -51,7 +51,7 @@ func (m *MetadataTable) ToNewCacheFuncFormat(funcName, selectFunc, structName, d
 			continue
 		}
 	}
-	b += "\t}\n\tvalues := data.Values()\n\tdata.data = values\n\treturn data\n}"
+	b += "\t}\n\tdata.data = data.Values()\n\treturn data\n}"
 	return
 }
 
@@ -103,8 +103,9 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 			b += fmt.Sprintf("\tfor _, item := range cache.records {\n\t\tif _, found := elements[%s]; !found {\n\t\t\thasChanges = true\n\t\t\tcache.changes = append(cache.changes, &%s{Action: \"remove\", Record: item})\n\t\t}\n\t}\n", key, recordName)
 		}
 	}
-	b += "\tif !hasChanges {\n\treturn\n\t}\n"
-	b += "\tcache.Lock()\n\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n"
+	b += "\n\tif !hasChanges {\n\treturn\n\t}\n"
+	b += "\n\tcache.Lock()\n\tdefer cache.Unlock()\n"
+	b += "\n\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n"
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
 			b += "\t\tcase \"add\":\n"
@@ -135,8 +136,8 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 			b += fmt.Sprintf("\t\t\tdelete(cache.%s, change.Record.%s)\n", m.Fields[i].Name, m.Fields[i].ToUpperCase())
 		}
 	}
-	b += "\t\t}\n\t}\n\tcache.Unlock()\n"
-	b += "\n\tvalues := cache.Values()\n\tcache.data = values\n}"
+	b += "\t\t}\n\t}\n"
+	b += "\n\tcache.data = cache.Values()\n\tcache.updated = true\n}"
 
 	return
 }
@@ -170,4 +171,12 @@ func (m *MetadataTable) ToSubSelectCacheFuncFormat(funcPrefix, cacheName, databa
 
 func (m *MetadataTable) ToDataCacheFuncFormat(funcName, cacheName, databasePrefix string) string {
 	return fmt.Sprintf("func (cache *%s) %s() []*%s.%s {\n\treturn cache.data\n}", cacheName, funcName, databasePrefix, m.ToUpperCase())
+}
+
+func (m *MetadataTable) ToResetUpdatedCacheFuncFormat(funcName, cacheName string) string {
+	return fmt.Sprintf("func (cache *%s) %s() {\n\tcache.Lock()\n\tdefer cache.Unlock()\n\n\tcache.updated = false\n}", cacheName, funcName)
+}
+
+func (m *MetadataTable) ToIsUpdatedCacheFuncFormat(funcName, cacheName string) string {
+	return fmt.Sprintf("func (cache *%s) %s() bool {\n\tcache.RLock()\n\tdefer cache.RUnlock()\n\n\treturn cache.updated\n}", cacheName, funcName)
 }
