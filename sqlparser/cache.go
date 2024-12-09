@@ -104,8 +104,8 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 		}
 	}
 	b += "\n\tif !hasChanges {\n\treturn\n\t}\n"
-	b += "\n\tcache.Lock()\n\tdefer cache.Unlock()\n"
-	b += "\n\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n"
+	b += "\n\tcache.Lock()\n"
+	b += "\tfor _, change := range cache.changes {\n\t\tswitch change.Action {\n"
 	for i := range m.Fields {
 		if m.Fields[i].PrimaryKey {
 			b += "\t\tcase \"add\":\n"
@@ -137,7 +137,7 @@ func (m *MetadataTable) ToSyncCacheFuncFormat(funcName, selectFunc, cacheName, r
 		}
 	}
 	b += "\t\t}\n\t}\n"
-	b += "\n\tcache.data = cache.Values()\n\tcache.updated = true\n}"
+	b += "\tcache.Unlock()\n\n\tcache.data = cache.Values()\n\tcache.updated = true\n}"
 
 	return
 }
